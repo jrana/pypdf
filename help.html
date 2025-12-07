@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyPDF User Guide</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-green: #238636;
+            --accent-blue: #58a6ff;
+            --accent-purple: #a371f7;
+            --border-color: #30363d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        header {
+            text-align: center;
+            padding: 60px 0;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        nav {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 40px;
+        }
+
+        nav h2 {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        nav ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+        }
+
+        nav a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: block;
+            transition: background 0.2s;
+        }
+
+        nav a:hover {
+            background: var(--bg-tertiary);
+        }
+
+        section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--accent-green);
+            display: inline-block;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            margin: 24px 0 12px 0;
+            color: var(--accent-blue);
+        }
+
+        p {
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        ul, ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .shortcut {
+            display: inline-block;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            color: var(--accent-purple);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .feature-card h4 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: var(--accent-green);
+        }
+
+        .feature-card p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .tip {
+            background: linear-gradient(135deg, rgba(35, 134, 54, 0.1) 0%, rgba(88, 166, 255, 0.1) 100%);
+            border-left: 4px solid var(--accent-green);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .tip strong {
+            color: var(--accent-green);
+        }
+
+        .warning {
+            background: rgba(255, 166, 87, 0.1);
+            border-left: 4px solid #ffa657;
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .warning strong {
+            color: #ffa657;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .emoji {
+            font-size: 1.2rem;
+            margin-right: 8px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            section {
+                padding: 20px;
+            }
+            
+            nav ul {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📄 PyPDF User Guide</h1>
+            <p>A modern, feature-rich PDF viewer and editor</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <nav>
+            <h2>Contents</h2>
+            <ul>
+                <li><a href="#getting-started">Getting Started</a></li>
+                <li><a href="#viewing">Viewing PDFs</a></li>
+                <li><a href="#navigation">Navigation</a></li>
+                <li><a href="#zoom">Zoom Controls</a></li>
+                <li><a href="#editing">Editing PDFs</a></li>
+                <li><a href="#inserting">Inserting Pages</a></li>
+                <li><a href="#splitting">Splitting & Extracting</a></li>
+                <li><a href="#saving">Saving & Printing</a></li>
+                <li><a href="#themes">Themes</a></li>
+                <li><a href="#shortcuts">Keyboard Shortcuts</a></li>
+            </ul>
+        </nav>
+
+        <section id="getting-started">
+            <h2>Getting Started</h2>
+            <p>PyPDF is a powerful PDF viewer and editor that allows you to view, edit, and manage PDF documents with ease. Here's how to get started:</p>
+            
+            <h3>Opening a PDF</h3>
+            <p>There are several ways to open a PDF file:</p>
+            <ul>
+                <li>Click <span class="emoji">📂</span><strong>Open</strong> in the toolbar</li>
+                <li>Use the menu: <strong>File → Open</strong></li>
+                <li>Press <span class="shortcut">Ctrl+O</span></li>
+                <li>Drag and drop a PDF file onto the application window</li>
+            </ul>
+
+            <h3>Opening a Folder</h3>
+            <p>You can also open an entire folder of PDFs:</p>
+            <ul>
+                <li>Click <span class="emoji">📁</span><strong>Open Folder</strong> in the toolbar</li>
+                <li>All PDF files in the folder will appear in the sidebar for easy access</li>
+            </ul>
+
+            <div class="tip">
+                <strong>💡 Tip:</strong> You can have multiple PDFs open at once. Each PDF opens in its own tab for easy switching.
+            </div>
+        </section>
+
+        <section id="viewing">
+            <h2>Viewing PDFs</h2>
+            <p>PyPDF offers two viewing modes to suit your needs:</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4><span class="emoji">📄</span>Single View (Continuous Scroll)</h4>
+                    <p>All pages are displayed vertically in a continuous scroll. Perfect for reading documents naturally from top to bottom.</p>
+                </div>
+                <div class="feature-card">
+                    <h4><span class="emoji">📑</span>Grid View</h4>
+                    <p>See all pages as thumbnails in a grid. Great for getting an overview, reordering pages, or selecting multiple pages for editing.</p>
+                </div>
+            </div>
+
+            <h3>Switching Views</h3>
+            <ul>
+                <li>Click <span class="emoji">📄</span><strong>Single</strong> or <span class="emoji">📑</span><strong>Grid</strong> in the toolbar</li>
+                <li>Use keyboard shortcuts: <span class="shortcut">Ctrl+3</span> for Single, <span class="shortcut">Ctrl+4</span> for Grid</li>
+            </ul>
+
+            <h3>Grid View Features</h3>
+            <p>In Grid View, you can:</p>
+            <ul>
+                <li><strong>Select pages</strong> by clicking on them (checkbox appears)</li>
+                <li><strong>Reorder pages</strong> by dragging and dropping thumbnails</li>
+                <li><strong>Double-click</strong> a thumbnail to jump to that page in Single View</li>
+                <li><strong>Select all</strong> or <strong>Deselect all</strong> pages using the toolbar buttons</li>
+            </ul>
+        </section>
+
+        <section id="navigation">
+            <h2>Navigation</h2>
+            <p>Navigate through your PDF with ease:</p>
+
+            <h3>Page Navigation</h3>
+            <ul>
+                <li><strong>Previous/Next Page:</strong> Click the ◀ and ▶ buttons in the toolbar</li>
+                <li><strong>Go to specific page:</strong> Enter a page number in the page spinner</li>
+                <li><strong>Scroll:</strong> In Single View, simply scroll to move between pages</li>
+            </ul>
+
+            <h3>Page Indicator</h3>
+            <p>The current page is always shown in the toolbar. In continuous scroll mode, the page indicator automatically updates as you scroll through the document.</p>
+
+            <div class="tip">
+                <strong>💡 Tip:</strong> The page indicator shows your current position as "Page X / Total". You can click on it and type a specific page number to jump directly there.
+            </div>
+        </section>
+
+        <section id="zoom">
+            <h2>Zoom Controls</h2>
+            <p>Control how your PDF is displayed:</p>
+
+            <h3>Zoom Options</h3>
+            <table>
+                <tr>
+                    <th>Action</th>
+                    <th>How to Use</th>
+                </tr>
+                <tr>
+                    <td>Zoom In</td>
+                    <td>Click 🔍+ or press <span class="shortcut">Ctrl++</span> or <span class="shortcut">Ctrl+Scroll Up</span></td>
+                </tr>
+                <tr>
+                    <td>Zoom Out</td>
+                    <td>Click 🔍- or press <span class="shortcut">Ctrl+-</span> or <span class="shortcut">Ctrl+Scroll Down</span></td>
+                </tr>
+                <tr>
+                    <td>Fit Width</td>
+                    <td>Menu: View → Fit Width or press <span class="shortcut">Ctrl+1</span></td>
+                </tr>
+                <tr>
+                    <td>Fit Page</td>
+                    <td>Menu: View → Fit Page or press <span class="shortcut">Ctrl+2</span></td>
+                </tr>
+            </table>
+
+            <h3>Pan/Scroll</h3>
+            <p>Click and drag on the page to pan around when zoomed in. The cursor changes to a hand icon to indicate pan mode.</p>
+        </section>
+
+        <section id="editing">
+            <h2>Editing PDFs</h2>
+            <p>PyPDF provides powerful editing capabilities:</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4><span class="emoji">📥</span>Insert Pages</h4>
+                    <p>Add pages from another PDF document with visual thumbnail selection.</p>
+                </div>
+                <div class="feature-card">
+                    <h4><span class="emoji">🖼️</span>Insert Images</h4>
+                    <p>Convert images to PDF pages and insert them into your document.</p>
+                </div>
+                <div class="feature-card">
+                    <h4><span class="emoji">🗑️</span>Delete Pages</h4>
+                    <p>Remove unwanted pages from your PDF.</p>
+                </div>
+                <div class="feature-card">
+                    <h4><span class="emoji">✂️</span>Extract Pages</h4>
+                    <p>Split your PDF by extracting selected pages to a new file.</p>
+                </div>
+            </div>
+
+            <h3>Reordering Pages</h3>
+            <ol>
+                <li>Switch to <strong>Grid View</strong></li>
+                <li>Click and drag a page thumbnail to its new position</li>
+                <li>Release to drop the page in place</li>
+            </ol>
+
+            <div class="warning">
+                <strong>⚠️ Note:</strong> All edits are held in memory until you save. Make sure to save your changes before closing the application.
+            </div>
+        </section>
+
+        <section id="inserting">
+            <h2>Inserting Pages</h2>
+            
+            <h3>Insert Pages from Another PDF</h3>
+            <ol>
+                <li>Click <span class="emoji">📥</span><strong>Insert PDF</strong> in the toolbar or use <strong>Edit → Insert PDF Pages</strong></li>
+                <li>Select a PDF file to insert from</li>
+                <li>The Insert Dialog opens showing thumbnails of all pages</li>
+                <li>Choose your selection mode:
+                    <ul>
+                        <li><strong>📄 All Pages:</strong> Insert all pages from the source PDF</li>
+                        <li><strong>🖱️ Select Pages:</strong> Click on thumbnails to select specific pages</li>
+                    </ul>
+                </li>
+                <li>Choose where to insert (after which page number)</li>
+                <li>Click <strong>Insert</strong> to add the pages</li>
+            </ol>
+
+            <div class="tip">
+                <strong>💡 Tip:</strong> When selecting pages, you can pick non-contiguous pages (e.g., pages 1, 3, and 7). They will be inserted in order.
+            </div>
+
+            <h3>Insert Images as Pages</h3>
+            <ol>
+                <li>Click <span class="emoji">🖼️</span><strong>Insert Image</strong> or use <strong>Edit → Insert Images as Pages</strong></li>
+                <li>Select one or more image files (PNG, JPG, GIF, BMP, TIFF, WebP)</li>
+                <li>Choose where to insert the images</li>
+                <li>Each image becomes a new PDF page</li>
+            </ol>
+        </section>
+
+        <section id="splitting">
+            <h2>Splitting & Extracting Pages</h2>
+            
+            <h3>Extract Selected Pages</h3>
+            <ol>
+                <li>Switch to <strong>Grid View</strong></li>
+                <li>Click on the pages you want to extract (or use Select All)</li>
+                <li>Click <span class="emoji">✂️</span><strong>Extract</strong> in the toolbar</li>
+                <li>Configure the split options in the dialog</li>
+                <li>Choose a location to save the new PDF</li>
+            </ol>
+
+            <h3>Delete Pages</h3>
+            <ol>
+                <li>Switch to <strong>Grid View</strong></li>
+                <li>Select the pages you want to delete</li>
+                <li>Click <span class="emoji">🗑️</span><strong>Delete</strong> in the toolbar</li>
+                <li>Confirm the deletion</li>
+            </ol>
+
+            <div class="warning">
+                <strong>⚠️ Warning:</strong> You cannot delete all pages. At least one page must remain in the document.
+            </div>
+        </section>
+
+        <section id="saving">
+            <h2>Saving & Printing</h2>
+            
+            <h3>Saving Your PDF</h3>
+            <ul>
+                <li><strong>Save:</strong> Press <span class="shortcut">Ctrl+S</span> or click the Save button to save changes to the original file</li>
+                <li><strong>Save As:</strong> Press <span class="shortcut">Ctrl+Shift+S</span> to save to a new file</li>
+            </ul>
+
+            <h3>Unsaved Changes Warning</h3>
+            <p>If you try to close the application with unsaved changes, PyPDF will warn you and give you the option to:</p>
+            <ul>
+                <li><strong>Quit Without Saving:</strong> Discard all unsaved changes</li>
+                <li><strong>Cancel:</strong> Go back and save your work</li>
+            </ul>
+
+            <h3>Printing</h3>
+            <ol>
+                <li>Click <span class="emoji">🖨️</span><strong>Print</strong> or press <span class="shortcut">Ctrl+P</span></li>
+                <li>Configure your print settings in the system dialog</li>
+                <li>Click Print to send to your printer</li>
+            </ol>
+        </section>
+
+        <section id="themes">
+            <h2>Themes</h2>
+            <p>PyPDF supports both dark and light themes for comfortable viewing:</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4><span class="emoji">🌙</span>Dark Theme</h4>
+                    <p>Easy on the eyes for extended reading sessions, especially in low-light environments.</p>
+                </div>
+                <div class="feature-card">
+                    <h4><span class="emoji">☀️</span>Light Theme</h4>
+                    <p>Classic bright interface for well-lit environments and high-contrast viewing.</p>
+                </div>
+            </div>
+
+            <h3>Switching Themes</h3>
+            <ul>
+                <li>Click the theme toggle button in the toolbar</li>
+                <li>Or use the menu: <strong>View → Dark Theme</strong> / <strong>Light Theme</strong></li>
+            </ul>
+
+            <div class="tip">
+                <strong>💡 Tip:</strong> Your theme preference is saved automatically and will be remembered the next time you open PyPDF.
+            </div>
+        </section>
+
+        <section id="shortcuts">
+            <h2>Keyboard Shortcuts</h2>
+            <p>Speed up your workflow with these keyboard shortcuts:</p>
+
+            <table>
+                <tr>
+                    <th>Action</th>
+                    <th>Shortcut</th>
+                </tr>
+                <tr>
+                    <td>Open File</td>
+                    <td><span class="shortcut">Ctrl+O</span></td>
+                </tr>
+                <tr>
+                    <td>Save</td>
+                    <td><span class="shortcut">Ctrl+S</span></td>
+                </tr>
+                <tr>
+                    <td>Save As</td>
+                    <td><span class="shortcut">Ctrl+Shift+S</span></td>
+                </tr>
+                <tr>
+                    <td>Print</td>
+                    <td><span class="shortcut">Ctrl+P</span></td>
+                </tr>
+                <tr>
+                    <td>Close Tab</td>
+                    <td><span class="shortcut">Ctrl+W</span></td>
+                </tr>
+                <tr>
+                    <td>Quit</td>
+                    <td><span class="shortcut">Ctrl+Q</span></td>
+                </tr>
+                <tr>
+                    <td>Zoom In</td>
+                    <td><span class="shortcut">Ctrl++</span></td>
+                </tr>
+                <tr>
+                    <td>Zoom Out</td>
+                    <td><span class="shortcut">Ctrl+-</span></td>
+                </tr>
+                <tr>
+                    <td>Fit Width</td>
+                    <td><span class="shortcut">Ctrl+1</span></td>
+                </tr>
+                <tr>
+                    <td>Fit Page</td>
+                    <td><span class="shortcut">Ctrl+2</span></td>
+                </tr>
+                <tr>
+                    <td>Single Page View</td>
+                    <td><span class="shortcut">Ctrl+3</span></td>
+                </tr>
+                <tr>
+                    <td>Grid View</td>
+                    <td><span class="shortcut">Ctrl+4</span></td>
+                </tr>
+                <tr>
+                    <td>Previous Page</td>
+                    <td><span class="shortcut">Page Up</span></td>
+                </tr>
+                <tr>
+                    <td>Next Page</td>
+                    <td><span class="shortcut">Page Down</span></td>
+                </tr>
+                <tr>
+                    <td>Insert PDF Pages</td>
+                    <td><span class="shortcut">Ctrl+Shift+P</span></td>
+                </tr>
+                <tr>
+                    <td>Insert Images</td>
+                    <td><span class="shortcut">Ctrl+Shift+I</span></td>
+                </tr>
+                <tr>
+                    <td>Select All (Grid View)</td>
+                    <td><span class="shortcut">Ctrl+A</span></td>
+                </tr>
+            </table>
+        </section>
+    </div>
+
+    <footer>
+        <p>PyPDF - PDF Viewer & Editor</p>
+        <p style="margin-top: 8px; font-size: 0.9rem;">Built with Python, PyQt6, and PyMuPDF</p>
+    </footer>
+</body>
+</html>
+

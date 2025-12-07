@@ -16,7 +16,8 @@ from PyQt6.QtWidgets import (
     QComboBox, QPushButton, QFrame, QMessageBox, QInputDialog,
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QSizePolicy,
     QMenu, QToolButton, QDockWidget, QLineEdit, QGridLayout,
-    QStackedWidget, QCheckBox, QDialog, QDialogButtonBox, QProgressDialog
+    QStackedWidget, QCheckBox, QDialog, QDialogButtonBox, QProgressDialog,
+    QGraphicsDropShadowEffect
 )
 from PyQt6.QtCore import Qt, QSize, QPointF, QRectF, pyqtSignal, QTimer, QMarginsF, QSettings
 from PyQt6.QtGui import (
@@ -614,7 +615,7 @@ QLineEdit:focus {
 # ============================================================================
 
 class PDFPageView(QGraphicsView):
-    """Custom graphics view for displaying PDF pages with zoom and pan."""
+    """Custom graphics view for displaying PDF pages with zoom and pan - continuous scroll mode."""
     
     page_changed = pyqtSignal(int)
     
@@ -629,7 +630,9 @@ class PDFPageView(QGraphicsView):
         self.min_zoom = 0.25
         self.max_zoom = 4.0
         
-        self.pixmap_item: Optional[QGraphicsPixmapItem] = None
+        self.pixmap_items: List[QGraphicsPixmapItem] = []  # All page items
+        self.page_positions: List[float] = []  # Y position of each page
+        self.page_gap = 20  # Gap between pages in pixels
         
         # Configure view
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -644,6 +647,9 @@ class PDFPageView(QGraphicsView):
         # Background
         self.setBackgroundBrush(QBrush(QColor("#161b22")))
         
+        # Connect scrollbar to track current page
+        self.verticalScrollBar().valueChanged.connect(self._on_scroll)
+        
         # Annotations
         self.annotations: List[Dict] = []
         self.current_tool = "select"  # select, highlight, text, draw
@@ -656,39 +662,74 @@ class PDFPageView(QGraphicsView):
             self.pdf_doc = fitz.open(file_path)
             self.current_page = 0
             self.zoom_level = 1.0
-            self.render_page()
+            self.render_all_pages()
             return True
         except Exception as e:
             print(f"Error loading PDF: {e}")
             return False
     
-    def render_page(self):
-        """Render the current page at the current zoom level."""
-        if not self.pdf_doc or self.current_page >= len(self.pdf_doc):
+    def render_all_pages(self):
+        """Render all pages stacked vertically for continuous scrolling."""
+        if not self.pdf_doc:
             return
         
-        page = self.pdf_doc[self.current_page]
-        
-        # Create a matrix for zoom
-        mat = fitz.Matrix(self.zoom_level * 2, self.zoom_level * 2)  # 2x for better quality
-        pix = page.get_pixmap(matrix=mat, alpha=False)
-        
-        # Convert to QImage
-        img = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format.Format_RGB888)
-        pixmap = QPixmap.fromImage(img)
-        
-        # Update scene
         self.scene.clear()
-        self.pixmap_item = self.scene.addPixmap(pixmap)
-        self.scene.setSceneRect(QRectF(pixmap.rect()))
+        self.pixmap_items.clear()
+        self.page_positions.clear()
         
-        # Center the page
-        self.centerOn(self.pixmap_item)
+        current_y = self.page_gap
+        max_width = 0
+        
+        # Calculate maximum page width to center all pages
+        for i in range(len(self.pdf_doc)):
+            page = self.pdf_doc[i]
+            page_width = page.rect.width * self.zoom_level * 2
+            max_width = max(max_width, page_width)
+        
+        # Render each page
+        for i in range(len(self.pdf_doc)):
+            page = self.pdf_doc[i]
+            
+            # Create a matrix for zoom
+            mat = fitz.Matrix(self.zoom_level * 2, self.zoom_level * 2)  # 2x for better quality
+            pix = page.get_pixmap(matrix=mat, alpha=False)
+            
+            # Convert to QImage
+            img = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format.Format_RGB888)
+            pixmap = QPixmap.fromImage(img)
+            
+            # Add to scene - centered horizontally
+            pixmap_item = self.scene.addPixmap(pixmap)
+            x_offset = (max_width - pixmap.width()) / 2
+            pixmap_item.setPos(x_offset, current_y)
+            
+            self.pixmap_items.append(pixmap_item)
+            self.page_positions.append(current_y)
+            
+            current_y += pixmap.height() + self.page_gap
+        
+        # Set scene rect
+        total_height = current_y
+        self.scene.setSceneRect(0, 0, max_width, total_height)
+        
+        # Scroll to current page
+        if self.page_positions:
+            self._scroll_to_page(self.current_page)
+    
+    def render_page(self):
+        """Re-render all pages (for compatibility)."""
+        self.render_all_pages()
     
     def set_zoom(self, zoom: float):
         """Set zoom level and re-render."""
+        old_zoom = self.zoom_level
         self.zoom_level = max(self.min_zoom, min(zoom, self.max_zoom))
-        self.render_page()
+        if old_zoom != self.zoom_level:
+            # Remember current page before re-render
+            current = self.current_page
+            self.render_all_pages()
+            # Scroll back to the same page
+            self._scroll_to_page(current)
     
     def zoom_in(self):
         """Zoom in by 25%."""
@@ -702,7 +743,8 @@ class PDFPageView(QGraphicsView):
         """Fit page to viewport width."""
         if not self.pdf_doc:
             return
-        page = self.pdf_doc[self.current_page]
+        # Use first page for width calculation (most consistent)
+        page = self.pdf_doc[0]
         page_width = page.rect.width
         viewport_width = self.viewport().width() - 40
         self.set_zoom(viewport_width / page_width / 2)
@@ -720,14 +762,42 @@ class PDFPageView(QGraphicsView):
         
         self.set_zoom(min(width_ratio, height_ratio))
     
+    def _scroll_to_page(self, page_num: int):
+        """Scroll to show a specific page at the top of the view."""
+        if not self.page_positions or page_num >= len(self.page_positions):
+            return
+        
+        # Get the Y position of the page
+        y_pos = self.page_positions[page_num]
+        
+        # Scroll to that position
+        self.centerOn(self.scene.sceneRect().width() / 2, y_pos + 100)
+    
+    def _on_scroll(self):
+        """Track scroll position to update current page indicator."""
+        if not self.page_positions:
+            return
+        
+        # Get the center Y position of the viewport in scene coordinates
+        viewport_center = self.mapToScene(self.viewport().rect().center())
+        center_y = viewport_center.y()
+        
+        # Find which page is at the center
+        for i in range(len(self.page_positions) - 1, -1, -1):
+            if center_y >= self.page_positions[i]:
+                if self.current_page != i:
+                    self.current_page = i
+                    self.page_changed.emit(self.current_page)
+                break
+    
     def go_to_page(self, page_num: int):
-        """Navigate to a specific page."""
+        """Navigate to a specific page by scrolling."""
         if not self.pdf_doc:
             return
         
         if 0 <= page_num < len(self.pdf_doc):
             self.current_page = page_num
-            self.render_page()
+            self._scroll_to_page(page_num)
             self.page_changed.emit(self.current_page)
     
     def next_page(self):
@@ -760,6 +830,8 @@ class PDFPageView(QGraphicsView):
             self.pdf_doc.close()
             self.pdf_doc = None
         self.scene.clear()
+        self.pixmap_items.clear()
+        self.page_positions.clear()
 
 
 # ============================================================================
@@ -835,6 +907,14 @@ class PageThumbnail(QFrame):
         
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setFixedSize(180, 260)
+        
+        # Add drop shadow effect
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(15)
+        shadow.setXOffset(0)
+        shadow.setYOffset(4)
+        shadow.setColor(QColor(0, 0, 0, 60))  # Light black shadow with transparency
+        self.setGraphicsEffect(shadow)
         
         # Store original pixmap for rescaling
         self.original_pixmap = pixmap
@@ -1454,23 +1534,98 @@ class SplitPDFDialog(QDialog):
 # INSERT PAGES DIALOG
 # ============================================================================
 
-class InsertPagesDialog(QDialog):
-    """Dialog for inserting pages from another PDF."""
+class InsertPageThumbnail(QFrame):
+    """Small thumbnail for insert dialog with selection support."""
     
-    def __init__(self, source_page_count: int, target_page_count: int, parent=None):
+    clicked = pyqtSignal(int)
+    
+    def __init__(self, page_num: int, pixmap: QPixmap, parent=None):
         super().__init__(parent)
-        self.source_page_count = source_page_count
+        self.page_num = page_num
+        self.selected = False
+        self.setup_ui(pixmap)
+        self.update_style()
+    
+    def setup_ui(self, pixmap: QPixmap):
+        """Set up the thumbnail UI."""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(2)
+        
+        # Thumbnail image
+        self.image_label = QLabel()
+        scaled = pixmap.scaled(80, 110, Qt.AspectRatioMode.KeepAspectRatio, 
+                               Qt.TransformationMode.SmoothTransformation)
+        self.image_label.setPixmap(scaled)
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.image_label)
+        
+        # Page number
+        self.page_label = QLabel(f"{self.page_num + 1}")
+        self.page_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.page_label.setStyleSheet("font-size: 11px; color: #8b949e;")
+        layout.addWidget(self.page_label)
+        
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setFixedSize(90, 140)
+    
+    def update_style(self):
+        """Update visual style based on selection."""
+        if self.selected:
+            self.setStyleSheet("""
+                InsertPageThumbnail {
+                    background-color: #238636;
+                    border: 2px solid #2ea043;
+                    border-radius: 8px;
+                }
+            """)
+            self.page_label.setStyleSheet("font-size: 11px; color: #ffffff; font-weight: 600;")
+        else:
+            self.setStyleSheet("""
+                InsertPageThumbnail {
+                    background-color: #21262d;
+                    border: 2px solid #30363d;
+                    border-radius: 8px;
+                }
+                InsertPageThumbnail:hover {
+                    background-color: #30363d;
+                    border-color: #8b949e;
+                }
+            """)
+            self.page_label.setStyleSheet("font-size: 11px; color: #8b949e;")
+    
+    def set_selected(self, selected: bool):
+        """Set selection state."""
+        self.selected = selected
+        self.update_style()
+    
+    def mousePressEvent(self, event):
+        """Handle click."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit(self.page_num)
+        super().mousePressEvent(event)
+
+
+class InsertPagesDialog(QDialog):
+    """Dialog for inserting pages from another PDF with thumbnail preview."""
+    
+    def __init__(self, src_doc: fitz.Document, target_page_count: int, parent=None):
+        super().__init__(parent)
+        self.src_doc = src_doc
+        self.source_page_count = len(src_doc)
         self.target_page_count = target_page_count
+        self.selected_pages: set = set()
+        self.thumbnails: List[InsertPageThumbnail] = []
         
         self.setWindowTitle("Insert PDF Pages")
-        self.setMinimumWidth(450)
+        self.setMinimumSize(600, 500)
         self.setup_ui()
     
     def setup_ui(self):
         """Set up the dialog UI."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(16)
-        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(12)
+        layout.setContentsMargins(20, 20, 20, 20)
         
         # Title
         title = QLabel("Insert Pages from PDF")
@@ -1478,104 +1633,109 @@ class InsertPagesDialog(QDialog):
         layout.addWidget(title)
         
         # Source info
-        info_label = QLabel(f"Source PDF has {self.source_page_count} page{'s' if self.source_page_count != 1 else ''}")
+        info_label = QLabel(f"Source PDF has {self.source_page_count} page{'s' if self.source_page_count != 1 else ''} • Click thumbnails to select pages")
         info_label.setStyleSheet("color: #8b949e; font-size: 13px;")
         layout.addWidget(info_label)
         
-        # Page range selection
-        range_frame = QFrame()
-        range_layout = QVBoxLayout(range_frame)
-        range_layout.setContentsMargins(0, 0, 0, 0)
+        # Selection mode buttons
+        mode_layout = QHBoxLayout()
         
-        range_label = QLabel("Pages to insert:")
-        range_label.setStyleSheet("color: #c9d1d9; font-size: 14px;")
-        range_layout.addWidget(range_label)
-        
-        # All pages option
-        self.all_pages_radio = QPushButton("All Pages")
-        self.all_pages_radio.setCheckable(True)
-        self.all_pages_radio.setChecked(True)
-        self.all_pages_radio.setStyleSheet("""
+        self.all_pages_btn = QPushButton("📄 All Pages")
+        self.all_pages_btn.setCheckable(True)
+        self.all_pages_btn.setChecked(True)
+        self.all_pages_btn.setStyleSheet("""
             QPushButton {
                 background-color: #238636;
                 border-radius: 6px;
                 padding: 8px 16px;
-                text-align: left;
                 font-weight: 500;
             }
             QPushButton:!checked {
                 background-color: #21262d;
             }
+            QPushButton:!checked:hover {
+                background-color: #30363d;
+            }
         """)
-        range_layout.addWidget(self.all_pages_radio)
+        self.all_pages_btn.clicked.connect(self.on_all_pages_clicked)
+        mode_layout.addWidget(self.all_pages_btn)
         
-        # Custom range option
-        range_row = QHBoxLayout()
-        
-        self.custom_range_radio = QPushButton("Page Range:")
-        self.custom_range_radio.setCheckable(True)
-        self.custom_range_radio.setStyleSheet("""
+        self.select_pages_btn = QPushButton("🖱️ Select Pages")
+        self.select_pages_btn.setCheckable(True)
+        self.select_pages_btn.setStyleSheet("""
             QPushButton {
                 background-color: #238636;
                 border-radius: 6px;
                 padding: 8px 16px;
-                text-align: left;
                 font-weight: 500;
             }
             QPushButton:!checked {
                 background-color: #21262d;
             }
+            QPushButton:!checked:hover {
+                background-color: #30363d;
+            }
         """)
-        range_row.addWidget(self.custom_range_radio)
+        self.select_pages_btn.clicked.connect(self.on_select_pages_clicked)
+        mode_layout.addWidget(self.select_pages_btn)
         
-        self.start_page_spin = QSpinBox()
-        self.start_page_spin.setRange(1, self.source_page_count)
-        self.start_page_spin.setValue(1)
-        self.start_page_spin.setEnabled(False)
-        range_row.addWidget(self.start_page_spin)
+        mode_layout.addStretch()
         
-        to_label = QLabel("to")
-        to_label.setStyleSheet("color: #8b949e;")
-        range_row.addWidget(to_label)
+        # Selection info label
+        self.selection_info = QLabel("")
+        self.selection_info.setStyleSheet("color: #58a6ff; font-size: 12px;")
+        mode_layout.addWidget(self.selection_info)
         
-        self.end_page_spin = QSpinBox()
-        self.end_page_spin.setRange(1, self.source_page_count)
-        self.end_page_spin.setValue(self.source_page_count)
-        self.end_page_spin.setEnabled(False)
-        range_row.addWidget(self.end_page_spin)
+        layout.addLayout(mode_layout)
         
-        range_row.addStretch()
-        range_layout.addLayout(range_row)
+        # Thumbnail grid in scroll area
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setStyleSheet("""
+            QScrollArea {
+                background-color: #0d1117;
+                border: 1px solid #30363d;
+                border-radius: 8px;
+            }
+        """)
         
-        layout.addWidget(range_frame)
+        self.thumb_container = QWidget()
+        self.thumb_layout = QGridLayout(self.thumb_container)
+        self.thumb_layout.setSpacing(8)
+        self.thumb_layout.setContentsMargins(12, 12, 12, 12)
         
-        # Radio button logic
-        self.all_pages_radio.clicked.connect(self.on_all_pages_clicked)
-        self.custom_range_radio.clicked.connect(self.on_custom_range_clicked)
+        self.scroll_area.setWidget(self.thumb_container)
+        layout.addWidget(self.scroll_area, 1)  # Give it stretch factor
+        
+        # Load thumbnails
+        self.load_thumbnails()
         
         # Insert position
-        layout.addSpacing(8)
+        pos_frame = QFrame()
+        pos_frame.setStyleSheet("background-color: #161b22; border-radius: 8px; padding: 8px;")
+        pos_layout = QHBoxLayout(pos_frame)
+        pos_layout.setContentsMargins(12, 8, 12, 8)
+        
         pos_label = QLabel("Insert after page:")
         pos_label.setStyleSheet("color: #c9d1d9; font-size: 14px;")
-        layout.addWidget(pos_label)
-        
-        pos_row = QHBoxLayout()
+        pos_layout.addWidget(pos_label)
         
         self.insert_pos_spin = QSpinBox()
         self.insert_pos_spin.setRange(0, self.target_page_count)
         self.insert_pos_spin.setValue(self.target_page_count)  # Default to end
         self.insert_pos_spin.setSpecialValueText("Beginning")
-        pos_row.addWidget(self.insert_pos_spin)
+        self.insert_pos_spin.setFixedWidth(80)
+        pos_layout.addWidget(self.insert_pos_spin)
         
-        pos_info = QLabel(f"(0 = at beginning, {self.target_page_count} = at end)")
+        pos_info = QLabel(f"(0 = beginning, {self.target_page_count} = end)")
         pos_info.setStyleSheet("color: #8b949e; font-size: 12px;")
-        pos_row.addWidget(pos_info)
+        pos_layout.addWidget(pos_info)
         
-        pos_row.addStretch()
-        layout.addLayout(pos_row)
+        pos_layout.addStretch()
+        layout.addWidget(pos_frame)
         
         # Buttons
-        layout.addSpacing(16)
         button_layout = QHBoxLayout()
         
         cancel_btn = QPushButton("Cancel")
@@ -1585,38 +1745,91 @@ class InsertPagesDialog(QDialog):
         
         button_layout.addStretch()
         
-        insert_btn = QPushButton("Insert Pages")
-        insert_btn.clicked.connect(self.accept)
-        button_layout.addWidget(insert_btn)
+        self.insert_btn = QPushButton("Insert All Pages")
+        self.insert_btn.clicked.connect(self.accept)
+        button_layout.addWidget(self.insert_btn)
         
         layout.addLayout(button_layout)
     
-    def on_all_pages_clicked(self):
-        """Handle all pages selection."""
-        self.all_pages_radio.setChecked(True)
-        self.custom_range_radio.setChecked(False)
-        self.start_page_spin.setEnabled(False)
-        self.end_page_spin.setEnabled(False)
+    def load_thumbnails(self):
+        """Load thumbnails from source PDF."""
+        cols = 5  # Number of columns in grid
+        
+        for i in range(self.source_page_count):
+            page = self.src_doc[i]
+            
+            # Create thumbnail
+            mat = fitz.Matrix(0.3, 0.3)  # Small scale for thumbnails
+            pix = page.get_pixmap(matrix=mat, alpha=False)
+            
+            img = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format.Format_RGB888)
+            pixmap = QPixmap.fromImage(img)
+            
+            thumbnail = InsertPageThumbnail(i, pixmap, self)
+            thumbnail.clicked.connect(self.on_thumbnail_clicked)
+            
+            row = i // cols
+            col = i % cols
+            self.thumb_layout.addWidget(thumbnail, row, col)
+            self.thumbnails.append(thumbnail)
     
-    def on_custom_range_clicked(self):
-        """Handle custom range selection."""
-        self.all_pages_radio.setChecked(False)
-        self.custom_range_radio.setChecked(True)
-        self.start_page_spin.setEnabled(True)
-        self.end_page_spin.setEnabled(True)
+    def on_thumbnail_clicked(self, page_num: int):
+        """Handle thumbnail click."""
+        # Switch to select mode if not already
+        if self.all_pages_btn.isChecked():
+            self.on_select_pages_clicked()
+        
+        # Toggle selection
+        thumb = self.thumbnails[page_num]
+        if page_num in self.selected_pages:
+            self.selected_pages.remove(page_num)
+            thumb.set_selected(False)
+        else:
+            self.selected_pages.add(page_num)
+            thumb.set_selected(True)
+        
+        self.update_selection_info()
+    
+    def on_all_pages_clicked(self):
+        """Handle all pages mode."""
+        self.all_pages_btn.setChecked(True)
+        self.select_pages_btn.setChecked(False)
+        
+        # Clear visual selection
+        for thumb in self.thumbnails:
+            thumb.set_selected(False)
+        self.selected_pages.clear()
+        
+        self.selection_info.setText("")
+        self.insert_btn.setText("Insert All Pages")
+    
+    def on_select_pages_clicked(self):
+        """Handle select pages mode."""
+        self.all_pages_btn.setChecked(False)
+        self.select_pages_btn.setChecked(True)
+        self.update_selection_info()
+    
+    def update_selection_info(self):
+        """Update the selection info label."""
+        count = len(self.selected_pages)
+        if count == 0:
+            self.selection_info.setText("No pages selected")
+            self.insert_btn.setText("Insert Pages")
+            self.insert_btn.setEnabled(False)
+        else:
+            self.selection_info.setText(f"{count} page{'s' if count != 1 else ''} selected")
+            self.insert_btn.setText(f"Insert {count} Page{'s' if count != 1 else ''}")
+            self.insert_btn.setEnabled(True)
     
     def get_insert_position(self) -> int:
         """Get the insert position (0-based page index)."""
         return self.insert_pos_spin.value()
     
-    def get_page_range(self):
-        """Get the page range to insert. Returns 'all' or (start, end) tuple (0-based)."""
-        if self.all_pages_radio.isChecked():
-            return "all"
-        else:
-            start = self.start_page_spin.value() - 1  # Convert to 0-based
-            end = self.end_page_spin.value() - 1
-            return (start, end)
+    def get_selected_pages(self) -> List[int]:
+        """Get list of selected page indices (0-based), sorted."""
+        if self.all_pages_btn.isChecked():
+            return list(range(self.source_page_count))
+        return sorted(self.selected_pages)
 
 
 # ============================================================================
@@ -2118,11 +2331,6 @@ class PDFTab(QWidget):
             self.selected_pages.clear()
             self.refresh_after_edit()
             
-            QMessageBox.information(
-                self, "Success",
-                f"Deleted {len(self.selected_pages) if self.selected_pages else 'selected'} page(s)."
-            )
-            
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to delete pages:\n{str(e)}")
     
@@ -2144,36 +2352,29 @@ class PDFTab(QWidget):
         
         try:
             src_doc = fitz.open(file_path)
-            src_page_count = len(src_doc)
             
             # Ask where to insert
             current_page_count = len(self.pdf_view.pdf_doc)
             
-            # Create dialog for insertion options
-            dialog = InsertPagesDialog(src_page_count, current_page_count, self)
+            # Create dialog for insertion options with thumbnail preview
+            dialog = InsertPagesDialog(src_doc, current_page_count, self)
             
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 insert_pos = dialog.get_insert_position()
-                page_range = dialog.get_page_range()
+                selected_pages = dialog.get_selected_pages()
                 
                 # Insert the pages
                 doc = self.pdf_view.pdf_doc
                 
-                if page_range == "all":
-                    doc.insert_pdf(src_doc, start_at=insert_pos)
-                else:
-                    start, end = page_range
-                    doc.insert_pdf(src_doc, from_page=start, to_page=end, start_at=insert_pos)
+                # Insert pages one by one to support non-contiguous selection
+                for i, page_num in enumerate(selected_pages):
+                    doc.insert_pdf(src_doc, from_page=page_num, to_page=page_num, 
+                                   start_at=insert_pos + i)
                 
                 src_doc.close()
                 
                 self.modified = True
                 self.refresh_after_edit()
-                
-                QMessageBox.information(
-                    self, "Success",
-                    f"Successfully inserted pages from:\n{Path(file_path).name}"
-                )
             else:
                 src_doc.close()
                 
@@ -2256,11 +2457,6 @@ class PDFTab(QWidget):
             
             self.modified = True
             self.refresh_after_edit()
-            
-            QMessageBox.information(
-                self, "Success",
-                f"Successfully inserted {len(file_paths)} image{'s' if len(file_paths) != 1 else ''} as page{'s' if len(file_paths) != 1 else ''}."
-            )
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to insert images:\n{str(e)}")
@@ -3729,6 +3925,38 @@ class PDFViewerApp(QMainWindow):
     
     def closeEvent(self, event):
         """Handle application close."""
+        # Check for unsaved changes
+        unsaved_files = []
+        for file_path, tab in self.open_files.items():
+            if tab.modified:
+                unsaved_files.append(tab.file_name)
+        
+        if unsaved_files:
+            # Show warning dialog
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setWindowTitle("Unsaved Changes")
+            
+            if len(unsaved_files) == 1:
+                msg.setText(f"'{unsaved_files[0]}' has unsaved changes.")
+            else:
+                files_list = "\n".join(f"• {f}" for f in unsaved_files)
+                msg.setText(f"The following files have unsaved changes:\n\n{files_list}")
+            
+            msg.setInformativeText("Do you want to quit without saving?")
+            msg.setStandardButtons(
+                QMessageBox.StandardButton.Discard | 
+                QMessageBox.StandardButton.Cancel
+            )
+            msg.setDefaultButton(QMessageBox.StandardButton.Cancel)
+            msg.button(QMessageBox.StandardButton.Discard).setText("Quit Without Saving")
+            
+            result = msg.exec()
+            
+            if result == QMessageBox.StandardButton.Cancel:
+                event.ignore()
+                return
+        
         # Close all open PDFs
         for tab in self.open_files.values():
             tab.close_tab()

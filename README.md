@@ -1,4 +1,4 @@
-# PyPDF - PDF Viewer & Editor
+# PyPDF - PDF Viewer, Creator & Editor
 
 A modern, feature-rich PDF viewer and editor built with PyQt6 and PyMuPDF.
 

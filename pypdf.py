@@ -743,8 +743,7 @@ class PDFPageView(QGraphicsView):
         """Fit page to viewport width."""
         if not self.pdf_doc:
             return
-        # Use first page for width calculation (most consistent)
-        page = self.pdf_doc[0]
+        page = self.pdf_doc[self.current_page]
         page_width = page.rect.width
         viewport_width = self.viewport().width() - 40
         self.set_zoom(viewport_width / page_width / 2)
@@ -783,12 +782,15 @@ class PDFPageView(QGraphicsView):
         center_y = viewport_center.y()
         
         # Find which page is at the center
+        new_page = 0  # Default to first page if scrolled above all pages
         for i in range(len(self.page_positions) - 1, -1, -1):
             if center_y >= self.page_positions[i]:
-                if self.current_page != i:
-                    self.current_page = i
-                    self.page_changed.emit(self.current_page)
+                new_page = i
                 break
+        
+        if self.current_page != new_page:
+            self.current_page = new_page
+            self.page_changed.emit(self.current_page)
     
     def go_to_page(self, page_num: int):
         """Navigate to a specific page by scrolling."""
@@ -2350,6 +2352,7 @@ class PDFTab(QWidget):
         if not file_path:
             return
         
+        src_doc = None
         try:
             src_doc = fitz.open(file_path)
             
@@ -2371,15 +2374,14 @@ class PDFTab(QWidget):
                     doc.insert_pdf(src_doc, from_page=page_num, to_page=page_num, 
                                    start_at=insert_pos + i)
                 
-                src_doc.close()
-                
                 self.modified = True
                 self.refresh_after_edit()
-            else:
-                src_doc.close()
                 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to insert PDF:\n{str(e)}")
+        finally:
+            if src_doc:
+                src_doc.close()
     
     def insert_image_as_page(self):
         """Insert images as new PDF pages."""

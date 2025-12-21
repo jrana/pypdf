@@ -1,4 +1,4 @@
-('C:\\Users\\jsran\\projects\\pypdf\\build\\pypdf\\PYZ-00.pyz',
+('C:\\Users\\jsran\\projects\\pypdf\\build\\PyPDF\\PYZ-00.pyz',
  [('PyQt6',
    'C:\\Users\\jsran\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyQt6\\__init__.py',
    'PYMODULE'),

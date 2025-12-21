@@ -3700,7 +3700,7 @@ class PDFViewerApp(QMainWindow):
         subtitle_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(subtitle_label)
         
-        version_label = QLabel("Version 2.1")
+        version_label = QLabel("Version 2.2")
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(version_label)
         

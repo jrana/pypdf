@@ -1058,7 +1058,7 @@ class PDFGridView(QScrollArea):
     """Grid view showing all PDF pages as thumbnails with drag-drop reordering."""
     
     # Constants for responsive grid
-    MAX_COLUMNS = 4
+    MAX_COLUMNS = 6
     MIN_THUMB_WIDTH = 150
     THUMB_ASPECT_RATIO = 1.4  # height = width * aspect_ratio
     GRID_MARGIN = 24
@@ -1755,7 +1755,7 @@ class InsertPagesDialog(QDialog):
     
     def load_thumbnails(self):
         """Load thumbnails from source PDF."""
-        cols = 5  # Number of columns in grid
+        cols = 6  # Number of columns in grid
         
         for i in range(self.source_page_count):
             page = self.src_doc[i]
@@ -2041,17 +2041,17 @@ class PDFTab(QWidget):
         nav_layout.addWidget(self.zoom_label)
         
         # Fit buttons
-        fit_width_btn = QPushButton("Fit Width")
-        fit_width_btn.setProperty("class", "secondaryBtn")
-        fit_width_btn.setObjectName("secondaryBtn")
-        fit_width_btn.clicked.connect(self.fit_width)
-        nav_layout.addWidget(fit_width_btn)
+        self.fit_width_btn = QPushButton("Fit Width")
+        self.fit_width_btn.setProperty("class", "secondaryBtn")
+        self.fit_width_btn.setObjectName("secondaryBtn")
+        self.fit_width_btn.clicked.connect(self.fit_width)
+        nav_layout.addWidget(self.fit_width_btn)
         
-        fit_page_btn = QPushButton("Fit Page")
-        fit_page_btn.setProperty("class", "secondaryBtn")
-        fit_page_btn.setObjectName("secondaryBtn")
-        fit_page_btn.clicked.connect(self.fit_page)
-        nav_layout.addWidget(fit_page_btn)
+        self.fit_page_btn = QPushButton("Fit Page")
+        self.fit_page_btn.setProperty("class", "secondaryBtn")
+        self.fit_page_btn.setObjectName("secondaryBtn")
+        self.fit_page_btn.clicked.connect(self.fit_page)
+        nav_layout.addWidget(self.fit_page_btn)
         
         layout.addWidget(self.nav_bar)
         
@@ -2171,20 +2171,34 @@ class PDFTab(QWidget):
             self.grid_view_btn.setChecked(False)
             self.grid_controls.hide()
             self.selection_label.hide()
-            # Enable single-page navigation
-            self.prev_btn.setEnabled(True)
-            self.next_btn.setEnabled(True)
-            self.page_spin.setEnabled(True)
+            # Show single-page navigation and zoom controls
+            self.prev_btn.show()
+            self.next_btn.show()
+            self.page_spin.show()
+            self.page_label.show()
+            self.zoom_out_btn.show()
+            self.zoom_slider.show()
+            self.zoom_in_btn.show()
+            self.zoom_label.show()
+            self.fit_width_btn.show()
+            self.fit_page_btn.show()
         else:
             self.view_stack.setCurrentIndex(1)
             self.single_view_btn.setChecked(False)
             self.grid_view_btn.setChecked(True)
             self.grid_controls.show()
             self.update_selection_label()
-            # Disable single-page navigation in grid view
-            self.prev_btn.setEnabled(False)
-            self.next_btn.setEnabled(False)
-            self.page_spin.setEnabled(False)
+            # Hide single-page navigation and zoom controls in grid view
+            self.prev_btn.hide()
+            self.next_btn.hide()
+            self.page_spin.hide()
+            self.page_label.hide()
+            self.zoom_out_btn.hide()
+            self.zoom_slider.hide()
+            self.zoom_in_btn.hide()
+            self.zoom_label.hide()
+            self.fit_width_btn.hide()
+            self.fit_page_btn.hide()
     
     def on_grid_selection_changed(self, pages: List[int]):
         """Handle grid selection change."""
@@ -3159,21 +3173,6 @@ class PDFViewerApp(QMainWindow):
         
         toolbar.addSeparator()
         
-        # View mode buttons
-        single_btn = QToolButton()
-        single_btn.setText("📄 Single")
-        single_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        single_btn.clicked.connect(self.set_single_view)
-        toolbar.addWidget(single_btn)
-        
-        grid_btn = QToolButton()
-        grid_btn.setText("⊞ Grid")
-        grid_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        grid_btn.clicked.connect(self.set_grid_view)
-        toolbar.addWidget(grid_btn)
-        
-        toolbar.addSeparator()
-        
         # Save button
         save_btn = QToolButton()
         save_btn.setText("💾 Save")
@@ -3190,56 +3189,6 @@ class PDFViewerApp(QMainWindow):
         """)
         save_btn.clicked.connect(self.save_pdf_current)
         toolbar.addWidget(save_btn)
-        
-        toolbar.addSeparator()
-        
-        # Insert PDF button
-        insert_pdf_btn = QToolButton()
-        insert_pdf_btn.setText("📄+ Insert PDF")
-        insert_pdf_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        insert_pdf_btn.clicked.connect(self.insert_pdf_current)
-        toolbar.addWidget(insert_pdf_btn)
-        
-        # Insert Image button
-        insert_img_btn = QToolButton()
-        insert_img_btn.setText("🖼️ Insert Image")
-        insert_img_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        insert_img_btn.clicked.connect(self.insert_image_current)
-        toolbar.addWidget(insert_img_btn)
-        
-        # Split PDF button
-        split_btn = QToolButton()
-        split_btn.setText("✂ Extract")
-        split_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        split_btn.setStyleSheet("""
-            QToolButton {
-                background-color: #8957e5;
-                border: 1px solid #8957e5;
-            }
-            QToolButton:hover {
-                background-color: #a371f7;
-                border-color: #a371f7;
-            }
-        """)
-        split_btn.clicked.connect(self.split_pdf_current)
-        toolbar.addWidget(split_btn)
-        
-        # Delete button
-        delete_btn = QToolButton()
-        delete_btn.setText("🗑️ Delete")
-        delete_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        delete_btn.setStyleSheet("""
-            QToolButton {
-                background-color: #da3633;
-                border: 1px solid #da3633;
-            }
-            QToolButton:hover {
-                background-color: #f85149;
-                border-color: #f85149;
-            }
-        """)
-        delete_btn.clicked.connect(self.delete_pages_current)
-        toolbar.addWidget(delete_btn)
         
         toolbar.addSeparator()
         

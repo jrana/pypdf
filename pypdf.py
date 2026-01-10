@@ -17,7 +17,7 @@ from PyQt6.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QSizePolicy,
     QMenu, QToolButton, QDockWidget, QLineEdit, QGridLayout,
     QStackedWidget, QCheckBox, QDialog, QDialogButtonBox, QProgressDialog,
-    QGraphicsDropShadowEffect
+    QGraphicsDropShadowEffect, QGraphicsRectItem
 )
 from PyQt6.QtCore import Qt, QSize, QPointF, QRectF, pyqtSignal, QTimer, QMarginsF, QSettings
 from PyQt6.QtGui import (
@@ -32,582 +32,7 @@ from PyQt6.QtPrintSupport import QPrinter, QPrintDialog, QPrintPreviewDialog
 # STYLES
 # ============================================================================
 
-DARK_THEME = """
-QMainWindow {
-    background-color: #0d1117;
-}
-
-QWidget {
-    background-color: #0d1117;
-    color: #c9d1d9;
-    font-family: 'Segoe UI', 'SF Pro Display', -apple-system, sans-serif;
-    font-size: 13px;
-}
-
-QMenuBar {
-    background-color: #161b22;
-    border-bottom: 1px solid #30363d;
-    padding: 4px;
-}
-
-QMenuBar::item {
-    background-color: transparent;
-    padding: 6px 12px;
-    border-radius: 4px;
-}
-
-QMenuBar::item:selected {
-    background-color: #21262d;
-}
-
-QMenu {
-    background-color: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 8px;
-    padding: 4px;
-}
-
-QMenu::item {
-    padding: 8px 32px 8px 16px;
-    border-radius: 4px;
-}
-
-QMenu::item:selected {
-    background-color: #388bfd;
-}
-
-QToolBar {
-    background-color: #161b22;
-    border: none;
-    border-bottom: 1px solid #30363d;
-    padding: 8px;
-    spacing: 8px;
-}
-
-QToolButton {
-    background-color: #21262d;
-    border: 1px solid #30363d;
-    border-radius: 6px;
-    padding: 8px 12px;
-    color: #c9d1d9;
-    font-weight: 500;
-}
-
-QToolButton:hover {
-    background-color: #30363d;
-    border-color: #8b949e;
-}
-
-QToolButton:pressed {
-    background-color: #388bfd;
-    border-color: #388bfd;
-}
-
-QPushButton {
-    background-color: #238636;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 16px;
-    color: white;
-    font-weight: 600;
-}
-
-QPushButton:hover {
-    background-color: #2ea043;
-}
-
-QPushButton:pressed {
-    background-color: #238636;
-}
-
-QPushButton#secondaryBtn {
-    background-color: #21262d;
-    border: 1px solid #30363d;
-    color: #c9d1d9;
-}
-
-QPushButton#secondaryBtn:hover {
-    background-color: #30363d;
-    border-color: #8b949e;
-}
-
-QListWidget {
-    background-color: #0d1117;
-    border: none;
-    outline: none;
-    padding: 8px;
-}
-
-QListWidget::item {
-    background-color: #161b22;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    padding: 12px;
-    margin: 4px 0;
-}
-
-QListWidget::item:hover {
-    background-color: #21262d;
-    border-color: #30363d;
-}
-
-QListWidget::item:selected {
-    background-color: #1f6feb;
-    border-color: #388bfd;
-}
-
-QTabWidget::pane {
-    background-color: #0d1117;
-    border: none;
-}
-
-QTabBar::tab {
-    background-color: #161b22;
-    border: 1px solid #30363d;
-    border-bottom: none;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    padding: 10px 20px;
-    margin-right: 4px;
-    color: #8b949e;
-}
-
-QTabBar::tab:selected {
-    background-color: #0d1117;
-    color: #c9d1d9;
-    border-bottom: 2px solid #388bfd;
-}
-
-QTabBar::tab:hover:!selected {
-    background-color: #21262d;
-}
-
-QScrollArea {
-    background-color: #0d1117;
-    border: none;
-}
-
-QScrollBar:vertical {
-    background-color: #0d1117;
-    width: 12px;
-    border-radius: 6px;
-}
-
-QScrollBar::handle:vertical {
-    background-color: #30363d;
-    border-radius: 6px;
-    min-height: 40px;
-}
-
-QScrollBar::handle:vertical:hover {
-    background-color: #484f58;
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0;
-}
-
-QScrollBar:horizontal {
-    background-color: #0d1117;
-    height: 12px;
-    border-radius: 6px;
-}
-
-QScrollBar::handle:horizontal {
-    background-color: #30363d;
-    border-radius: 6px;
-    min-width: 40px;
-}
-
-QScrollBar::handle:horizontal:hover {
-    background-color: #484f58;
-}
-
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    width: 0;
-}
-
-QSlider::groove:horizontal {
-    background-color: #21262d;
-    height: 6px;
-    border-radius: 3px;
-}
-
-QSlider::handle:horizontal {
-    background-color: #388bfd;
-    width: 16px;
-    height: 16px;
-    border-radius: 8px;
-    margin: -5px 0;
-}
-
-QSlider::handle:horizontal:hover {
-    background-color: #58a6ff;
-}
-
-QSpinBox, QComboBox {
-    background-color: #21262d;
-    border: 1px solid #30363d;
-    border-radius: 6px;
-    padding: 6px 12px;
-    color: #c9d1d9;
-}
-
-QSpinBox:hover, QComboBox:hover {
-    border-color: #8b949e;
-}
-
-QSpinBox:focus, QComboBox:focus {
-    border-color: #388bfd;
-}
-
-QComboBox::drop-down {
-    border: none;
-    padding-right: 8px;
-}
-
-QStatusBar {
-    background-color: #161b22;
-    border-top: 1px solid #30363d;
-    color: #8b949e;
-}
-
-QLabel#titleLabel {
-    font-size: 24px;
-    font-weight: 700;
-    color: #c9d1d9;
-}
-
-QLabel#subtitleLabel {
-    font-size: 14px;
-    color: #8b949e;
-}
-
-QFrame#separator {
-    background-color: #30363d;
-    max-height: 1px;
-}
-
-QGraphicsView {
-    background-color: #161b22;
-    border: none;
-}
-
-QDockWidget {
-    titlebar-close-icon: none;
-    titlebar-normal-icon: none;
-}
-
-QDockWidget::title {
-    background-color: #161b22;
-    padding: 12px;
-    font-weight: 600;
-    border-bottom: 1px solid #30363d;
-}
-
-QLineEdit {
-    background-color: #21262d;
-    border: 1px solid #30363d;
-    border-radius: 6px;
-    padding: 8px 12px;
-    color: #c9d1d9;
-}
-
-QLineEdit:focus {
-    border-color: #388bfd;
-}
-"""
-
-LIGHT_THEME = """
-QMainWindow {
-    background-color: #ffffff;
-}
-
-QWidget {
-    background-color: #ffffff;
-    color: #1f2328;
-    font-family: 'Segoe UI', 'SF Pro Display', -apple-system, sans-serif;
-    font-size: 13px;
-}
-
-QMenuBar {
-    background-color: #f6f8fa;
-    border-bottom: 1px solid #d0d7de;
-    padding: 4px;
-}
-
-QMenuBar::item {
-    background-color: transparent;
-    padding: 6px 12px;
-    border-radius: 4px;
-}
-
-QMenuBar::item:selected {
-    background-color: #eaeef2;
-}
-
-QMenu {
-    background-color: #ffffff;
-    border: 1px solid #d0d7de;
-    border-radius: 8px;
-    padding: 4px;
-}
-
-QMenu::item {
-    padding: 8px 32px 8px 16px;
-    border-radius: 4px;
-    color: #1f2328;
-}
-
-QMenu::item:selected {
-    background-color: #0969da;
-    color: white;
-}
-
-QToolBar {
-    background-color: #f6f8fa;
-    border: none;
-    border-bottom: 1px solid #d0d7de;
-    padding: 8px;
-    spacing: 8px;
-}
-
-QToolButton {
-    background-color: #ffffff;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    padding: 8px 12px;
-    color: #1f2328;
-    font-weight: 500;
-}
-
-QToolButton:hover {
-    background-color: #f3f4f6;
-    border-color: #8b949e;
-}
-
-QToolButton:pressed {
-    background-color: #0969da;
-    border-color: #0969da;
-    color: white;
-}
-
-QPushButton {
-    background-color: #1f883d;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 16px;
-    color: white;
-    font-weight: 600;
-}
-
-QPushButton:hover {
-    background-color: #2da44e;
-}
-
-QPushButton:pressed {
-    background-color: #1f883d;
-}
-
-QPushButton#secondaryBtn {
-    background-color: #f6f8fa;
-    border: 1px solid #d0d7de;
-    color: #1f2328;
-}
-
-QPushButton#secondaryBtn:hover {
-    background-color: #eaeef2;
-    border-color: #8b949e;
-}
-
-QListWidget {
-    background-color: #ffffff;
-    border: none;
-    outline: none;
-    padding: 8px;
-}
-
-QListWidget::item {
-    background-color: #f6f8fa;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    padding: 12px;
-    margin: 4px 0;
-    color: #1f2328;
-}
-
-QListWidget::item:hover {
-    background-color: #eaeef2;
-    border-color: #d0d7de;
-}
-
-QListWidget::item:selected {
-    background-color: #0969da;
-    border-color: #0550ae;
-    color: white;
-}
-
-QTabWidget::pane {
-    background-color: #ffffff;
-    border: none;
-}
-
-QTabBar::tab {
-    background-color: #f6f8fa;
-    border: 1px solid #d0d7de;
-    border-bottom: none;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    padding: 10px 20px;
-    margin-right: 4px;
-    color: #57606a;
-}
-
-QTabBar::tab:selected {
-    background-color: #ffffff;
-    color: #1f2328;
-    border-bottom: 2px solid #0969da;
-}
-
-QTabBar::tab:hover:!selected {
-    background-color: #eaeef2;
-}
-
-QScrollArea {
-    background-color: #ffffff;
-    border: none;
-}
-
-QScrollBar:vertical {
-    background-color: #ffffff;
-    width: 12px;
-    border-radius: 6px;
-}
-
-QScrollBar::handle:vertical {
-    background-color: #d0d7de;
-    border-radius: 6px;
-    min-height: 40px;
-}
-
-QScrollBar::handle:vertical:hover {
-    background-color: #8b949e;
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0;
-}
-
-QScrollBar:horizontal {
-    background-color: #ffffff;
-    height: 12px;
-    border-radius: 6px;
-}
-
-QScrollBar::handle:horizontal {
-    background-color: #d0d7de;
-    border-radius: 6px;
-    min-width: 40px;
-}
-
-QScrollBar::handle:horizontal:hover {
-    background-color: #8b949e;
-}
-
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    width: 0;
-}
-
-QSlider::groove:horizontal {
-    background-color: #eaeef2;
-    height: 6px;
-    border-radius: 3px;
-}
-
-QSlider::handle:horizontal {
-    background-color: #0969da;
-    width: 16px;
-    height: 16px;
-    border-radius: 8px;
-    margin: -5px 0;
-}
-
-QSlider::handle:horizontal:hover {
-    background-color: #0550ae;
-}
-
-QSpinBox, QComboBox {
-    background-color: #ffffff;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    padding: 6px 12px;
-    color: #1f2328;
-}
-
-QSpinBox:hover, QComboBox:hover {
-    border-color: #8b949e;
-}
-
-QSpinBox:focus, QComboBox:focus {
-    border-color: #0969da;
-}
-
-QComboBox::drop-down {
-    border: none;
-    padding-right: 8px;
-}
-
-QStatusBar {
-    background-color: #f6f8fa;
-    border-top: 1px solid #d0d7de;
-    color: #57606a;
-}
-
-QLabel#titleLabel {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1f2328;
-}
-
-QLabel#subtitleLabel {
-    font-size: 14px;
-    color: #57606a;
-}
-
-QFrame#separator {
-    background-color: #d0d7de;
-    max-height: 1px;
-}
-
-QGraphicsView {
-    background-color: #eaeef2;
-    border: none;
-}
-
-QDockWidget {
-    titlebar-close-icon: none;
-    titlebar-normal-icon: none;
-}
-
-QDockWidget::title {
-    background-color: #f6f8fa;
-    padding: 12px;
-    font-weight: 600;
-    border-bottom: 1px solid #d0d7de;
-}
-
-QLineEdit {
-    background-color: #ffffff;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    padding: 8px 12px;
-    color: #1f2328;
-}
-
-QLineEdit:focus {
-    border-color: #0969da;
-}
-"""
+from theme.styles import DARK_THEME, LIGHT_THEME
 
 
 # ============================================================================
@@ -632,7 +57,13 @@ class PDFPageView(QGraphicsView):
         
         self.pixmap_items: List[QGraphicsPixmapItem] = []  # All page items
         self.page_positions: List[float] = []  # Y position of each page
+        self.page_x_offsets: List[float] = []  # X offset of each page
         self.page_gap = 20  # Gap between pages in pixels
+        
+        # Search state
+        self.search_results = []  # List of (page_num, rect)
+        self.current_match_index = -1
+        self.highlight_items = []
         
         # Configure view
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -676,6 +107,8 @@ class PDFPageView(QGraphicsView):
         self.scene.clear()
         self.pixmap_items.clear()
         self.page_positions.clear()
+        self.page_x_offsets.clear()
+        self.highlight_items.clear()
         
         current_y = self.page_gap
         max_width = 0
@@ -705,6 +138,7 @@ class PDFPageView(QGraphicsView):
             
             self.pixmap_items.append(pixmap_item)
             self.page_positions.append(current_y)
+            self.page_x_offsets.append(x_offset)
             
             current_y += pixmap.height() + self.page_gap
         
@@ -712,6 +146,10 @@ class PDFPageView(QGraphicsView):
         total_height = current_y
         self.scene.setSceneRect(0, 0, max_width, total_height)
         
+        # Redraw highlights if they exist
+        if self.search_results:
+            self.draw_highlights()
+            
         # Scroll to current page
         if self.page_positions:
             self._scroll_to_page(self.current_page)
@@ -834,6 +272,80 @@ class PDFPageView(QGraphicsView):
         self.scene.clear()
         self.pixmap_items.clear()
         self.page_positions.clear()
+        self.page_x_offsets.clear()
+        self.highlight_items.clear()
+
+    def set_search_results(self, results: List[tuple], current_index: int = -1):
+        """Set search results and redraw highlights."""
+        self.search_results = results
+        self.current_match_index = current_index
+        self.draw_highlights()
+        
+    def draw_highlights(self):
+        """Draw search highlights on the scene."""
+        # Clear existing highlights
+        for item in self.highlight_items:
+            self.scene.removeItem(item)
+        self.highlight_items.clear()
+        
+        if not self.search_results or not self.pdf_doc:
+            return
+            
+        for i, (page_num, rect) in enumerate(self.search_results):
+            if page_num >= len(self.page_positions) or page_num >= len(self.page_x_offsets):
+                continue
+                
+            y_base = self.page_positions[page_num]
+            x_base = self.page_x_offsets[page_num]
+            
+            # Convert PDF coordinates to scene coordinates
+            scale = self.zoom_level * 2
+            
+            x = x_base + rect.x0 * scale
+            y = y_base + rect.y0 * scale
+            w = (rect.x1 - rect.x0) * scale
+            h = (rect.y1 - rect.y0) * scale
+            
+            highlight = QGraphicsRectItem(x, y, w, h)
+            
+            if i == self.current_match_index:
+                # Active match - Orange/ distinct color
+                color = QColor(255, 165, 0, 100) # Orange transparent
+                border = QColor(255, 140, 0)
+            else:
+                # Other matches - Yellow transparent
+                color = QColor(255, 255, 0, 80) # Yellow transparent
+                border = QColor(255, 255, 0)
+                
+            highlight.setBrush(QBrush(color))
+            highlight.setPen(QPen(border))
+            self.scene.addItem(highlight)
+            self.highlight_items.append(highlight)
+
+    def scroll_to_match(self, index: int):
+        """Scroll to ensure the match at index is visible."""
+        if not self.search_results or index < 0 or index >= len(self.search_results):
+            return
+            
+        self.current_match_index = index
+        # Redraw to update highlight colors
+        self.draw_highlights()
+        
+        page_num, rect = self.search_results[index]
+        
+        # Ensure page is loaded/rendered
+        if page_num >= len(self.page_positions):
+            return
+
+        y_base = self.page_positions[page_num]
+        x_base = self.page_x_offsets[page_num]
+        scale = self.zoom_level * 2
+        
+        target_y = y_base + rect.y0 * scale
+        target_x = x_base + rect.x0 * scale
+        
+        # Center view on match (with some vertical offset)
+        self.centerOn(target_x, target_y)
 
 
 # ============================================================================
@@ -1851,6 +1363,13 @@ class PDFTab(QWidget):
         self.current_theme = "dark"  # Track current theme for delayed loading
         
         self.setup_ui()
+        
+        # Add Search shortcut
+        self.search_shortcut = QAction("Find", self)
+        self.search_shortcut.setShortcut("Ctrl+F")
+        self.search_shortcut.triggered.connect(self.toggle_search)
+        self.addAction(self.search_shortcut)
+        
         self.load_pdf()
     
     def setup_ui(self):
@@ -2054,6 +1573,64 @@ class PDFTab(QWidget):
         nav_layout.addWidget(self.fit_page_btn)
         
         layout.addWidget(self.nav_bar)
+
+        # Search bar (hidden by default)
+        self.search_widget = QFrame()
+        self.search_widget.setVisible(False)
+        self.search_widget.setStyleSheet("""
+            QFrame {
+                background-color: #21262d;
+                border-bottom: 1px solid #30363d;
+            }
+        """)
+        search_layout = QHBoxLayout(self.search_widget)
+        search_layout.setContentsMargins(12, 8, 12, 8)
+        
+        search_label = QLabel("Find:")
+        search_label.setStyleSheet("color: #c9d1d9; font-weight: 500;")
+        search_layout.addWidget(search_label)
+        
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Find in document...")
+        self.search_input.setFixedWidth(250)
+        self.search_input.setStyleSheet("""
+            QLineEdit {
+                background-color: #0d1117;
+                border: 1px solid #30363d;
+                border-radius: 6px;
+                padding: 4px 8px;
+                color: #c9d1d9;
+            }
+            QLineEdit:focus {
+                border-color: #388bfd;
+            }
+        """)
+        self.search_input.returnPressed.connect(lambda: self.run_search(self.search_input.text()))
+        search_layout.addWidget(self.search_input)
+        
+        self.search_prev_btn = QPushButton("◀")
+        self.search_prev_btn.setFixedSize(28, 28)
+        self.search_prev_btn.clicked.connect(self.prev_match)
+        search_layout.addWidget(self.search_prev_btn)
+        
+        self.search_next_btn = QPushButton("▶")
+        self.search_next_btn.setFixedSize(28, 28)
+        self.search_next_btn.clicked.connect(self.next_match)
+        search_layout.addWidget(self.search_next_btn)
+        
+        self.search_count_label = QLabel("0/0")
+        self.search_count_label.setStyleSheet("color: #8b949e; margin-left: 8px;")
+        search_layout.addWidget(self.search_count_label)
+        
+        search_layout.addStretch()
+        
+        self.search_close_btn = QPushButton("✕")
+        self.search_close_btn.setFixedSize(28, 28)
+        self.search_close_btn.clicked.connect(self.toggle_search)
+        self.search_close_btn.setStyleSheet("background-color: transparent; color: #8b949e; border: none;")
+        search_layout.addWidget(self.search_close_btn)
+        
+        layout.addWidget(self.search_widget)
         
         # Grid view controls bar (shown only in grid view)
         self.grid_controls = QFrame()
@@ -2198,7 +1775,11 @@ class PDFTab(QWidget):
             self.zoom_in_btn.hide()
             self.zoom_label.hide()
             self.fit_width_btn.hide()
-            self.fit_page_btn.hide()
+            self.fit_width_btn.hide()
+        self.fit_page_btn.hide()
+        
+        # Hide search in grid mode
+        self.search_widget.hide()
     
     def on_grid_selection_changed(self, pages: List[int]):
         """Handle grid selection change."""
@@ -2676,6 +2257,9 @@ class PDFTab(QWidget):
                 }
                 QPushButton:hover { background-color: #d0d7de; }
             """
+            
+
+
             toggle_btn_style = """
                 QPushButton {
                     background-color: #eaeef2;
@@ -2697,7 +2281,7 @@ class PDFTab(QWidget):
             """
             grid_controls_style = """
                 QFrame {
-                    background-color: #f6f8fa;
+                    background-color: #ffffff;
                     border-bottom: 1px solid #d0d7de;
                     padding: 6px;
                 }
@@ -2706,10 +2290,8 @@ class PDFTab(QWidget):
             label_color = "#57606a"
             selection_color = "#0969da"
         
-        # Update navigation bar
+        # Apply styles
         self.nav_bar.setStyleSheet(nav_bar_style)
-        
-        # Update view toggle buttons
         self.single_view_btn.setStyleSheet(toggle_btn_style)
         self.grid_view_btn.setStyleSheet(toggle_btn_style)
         
@@ -2736,7 +2318,108 @@ class PDFTab(QWidget):
         
         # Update grid view theme
         self.grid_view.set_theme(theme)
-    
+        
+        # Update search widget styling
+        if theme == "dark":
+            self.search_widget.setStyleSheet("""
+                QFrame {
+                    background-color: #21262d;
+                    border-bottom: 1px solid #30363d;
+                }
+            """)
+            self.search_input.setStyleSheet("""
+                QLineEdit {
+                    background-color: #0d1117;
+                    border: 1px solid #30363d;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                    color: #c9d1d9;
+                }
+                QLineEdit:focus {
+                    border-color: #388bfd;
+                }
+            """)
+        else:
+            self.search_widget.setStyleSheet("""
+                QFrame {
+                    background-color: #f6f8fa;
+                    border-bottom: 1px solid #d0d7de;
+                }
+            """)
+            self.search_input.setStyleSheet("""
+                QLineEdit {
+                    background-color: #ffffff;
+                    border: 1px solid #d0d7de;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                    color: #1f2328;
+                }
+                QLineEdit:focus {
+                    border-color: #0969da;
+                }
+            """)
+
+    def toggle_search(self):
+        """Toggle the search widget visibility."""
+        if self.current_view == "grid":
+            return
+            
+        is_visible = self.search_widget.isVisible()
+        self.search_widget.setVisible(not is_visible)
+        
+        if not is_visible:
+            self.search_input.setFocus()
+            self.search_input.selectAll()
+        else:
+            self.search_input.clearFocus()
+            self.pdf_view.setFocus()
+
+    def run_search(self, text: str):
+        """Search for text in the document."""
+        if not self.pdf_view.pdf_doc or not text:
+            self.pdf_view.set_search_results([])
+            self.search_count_label.setText("0/0")
+            return
+            
+        results = []
+        for page_num in range(len(self.pdf_view.pdf_doc)):
+            page = self.pdf_view.pdf_doc[page_num]
+            # search_for returns list of rects
+            rects = page.search_for(text)
+            for rect in rects:
+                results.append((page_num, rect))
+                
+        self.pdf_view.set_search_results(results)
+        
+        count = len(results)
+        if count > 0:
+            self.pdf_view.scroll_to_match(0)
+            self.search_count_label.setText(f"1/{count}")
+        else:
+            self.search_count_label.setText("0/0")
+
+    def next_match(self):
+        """Go to the next search match."""
+        results = self.pdf_view.search_results
+        if not results:
+            return
+            
+        current = self.pdf_view.current_match_index
+        next_idx = (current + 1) % len(results)
+        self.pdf_view.scroll_to_match(next_idx)
+        self.search_count_label.setText(f"{next_idx + 1}/{len(results)}")
+
+    def prev_match(self):
+        """Go to the previous search match."""
+        results = self.pdf_view.search_results
+        if not results:
+            return
+            
+        current = self.pdf_view.current_match_index
+        prev_idx = (current - 1) % len(results)
+        self.pdf_view.scroll_to_match(prev_idx)
+        self.search_count_label.setText(f"{prev_idx + 1}/{len(results)}")
+
     def print_pdf(self):
         """Print the current PDF document."""
         if not self.pdf_view.pdf_doc:
@@ -2752,7 +2435,7 @@ class PDFTab(QWidget):
         
         if dialog.exec() == QPrintDialog.DialogCode.Accepted:
             self.do_print(printer)
-    
+
     def print_preview(self):
         """Show print preview dialog."""
         if not self.pdf_view.pdf_doc:
@@ -2766,7 +2449,7 @@ class PDFTab(QWidget):
         preview.setWindowTitle(f"Print Preview - {self.file_name}")
         preview.paintRequested.connect(self.do_print)
         preview.exec()
-    
+
     def do_print(self, printer: QPrinter):
         """Perform the actual printing."""
         if not self.pdf_view.pdf_doc:
@@ -2818,11 +2501,132 @@ class PDFTab(QWidget):
             QMessageBox.critical(self, "Print Error", f"Error during printing:\n{str(e)}")
         finally:
             painter.end()
-    
+
     def close_tab(self):
         """Clean up when tab is closed."""
         self.pdf_view.close_pdf()
 
+
+# ============================================================================
+# SETTINGS DIALOG
+# ============================================================================
+
+class SettingsDialog(QDialog):
+    """Dialog for application settings."""
+    
+    def __init__(self, parent=None, current_max_recent=5, theme="dark"):
+        super().__init__(parent)
+        self.setWindowTitle("Preferences")
+        self.setFixedWidth(400)
+        self.max_recent_files = current_max_recent
+        self.theme = theme
+        self.setup_ui()
+        
+    def setup_ui(self):
+        # Define colors based on theme
+        if self.theme == "dark":
+            bg_color = "#0d1117"
+            frame_bg = "#21262d"
+            text_color = "#c9d1d9"
+            border_color = "#30363d"
+            input_bg = "#0d1117"
+            cancel_bg = "#30363d"
+            cancel_hover = "#484f58"
+            cancel_text = "#c9d1d9"
+        else:
+            bg_color = "#ffffff"
+            frame_bg = "#f6f8fa"
+            text_color = "#1f2328"
+            border_color = "#d0d7de"
+            input_bg = "#ffffff"
+            cancel_bg = "#f6f8fa"
+            cancel_hover = "#eaeef2"
+            cancel_text = "#1f2328"
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(20)
+        
+        # General Settings Group
+        group = QFrame()
+        group.setStyleSheet(f"""
+            QFrame {{
+                background-color: {frame_bg};
+                border: 1px solid {border_color};
+                border-radius: 6px;
+                padding: 16px;
+            }}
+        """)
+        group_layout = QGridLayout(group)
+        
+        # Recent files count
+        label = QLabel("Recent files to remember:")
+        label.setStyleSheet(f"color: {text_color}; font-size: 13px;")
+        
+        self.recent_count_spin = QSpinBox()
+        self.recent_count_spin.setRange(0, 20)
+        self.recent_count_spin.setValue(self.max_recent_files)
+        self.recent_count_spin.setFixedWidth(80)
+        self.recent_count_spin.setStyleSheet(f"""
+            QSpinBox {{
+                background-color: {input_bg};
+                border: 1px solid {border_color};
+                border-radius: 6px;
+                padding: 4px;
+                color: {text_color};
+            }}
+        """)
+        
+        group_layout.addWidget(label, 0, 0)
+        group_layout.addWidget(self.recent_count_spin, 0, 1)
+        
+        layout.addWidget(group)
+        
+        # Buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        
+        # Style buttons
+        save_btn = button_box.button(QDialogButtonBox.StandardButton.Save)
+        save_btn.setText("Save Changes")
+        save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #238636;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-weight: 600;
+            }
+            QPushButton:hover { background-color: #2ea043; }
+        """)
+        
+        cancel_btn = button_box.button(QDialogButtonBox.StandardButton.Cancel)
+        cancel_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {cancel_bg};
+                color: {cancel_text};
+                border: 1px solid {border_color};
+                border-radius: 6px;
+                padding: 8px 16px;
+            }}
+            QPushButton:hover {{ background-color: {cancel_hover}; }}
+        """)
+        
+        layout.addWidget(button_box)
+        layout.addStretch()
+        
+        # Set dialog background
+        self.setStyleSheet(f"background-color: {bg_color};")
+
+    def get_settings(self):
+        """Get the updated settings."""
+        return {
+            "max_recent_files": self.recent_count_spin.value()
+        }
+
+
+# ============================================================================
 
 # ============================================================================
 # MAIN WINDOW
@@ -2839,13 +2643,78 @@ class PDFViewerApp(QMainWindow):
         
         self.current_folder = None
         self.open_files: Dict[str, PDFTab] = {}
-        self.current_theme = "dark"  # Track current theme
+        
+        # Load settings
+        self.settings = QSettings("PyPDF", "Viewer")
+        self.recent_files = self.settings.value("recent_files", [], type=list)
+        self.max_recent_files = int(self.settings.value("max_recent_files", 5))
+        self.current_theme = self.settings.value("theme", "dark", type=str)
         
         self.setup_ui()
         self.setup_menu()
         self.setup_toolbar()
         self.setup_statusbar()
         self.show_welcome()
+
+    def add_to_recent(self, file_path: str):
+        """Add file to recent list."""
+        if file_path in self.recent_files:
+            self.recent_files.remove(file_path)
+            
+        self.recent_files.insert(0, file_path)
+        
+        # Trim list
+        if len(self.recent_files) > self.max_recent_files:
+            self.recent_files = self.recent_files[:self.max_recent_files]
+            
+        self.settings.setValue("recent_files", self.recent_files)
+        self.update_recent_menu()
+        
+    def update_recent_menu(self):
+        """Update the recent files menu."""
+        self.recent_menu.clear()
+        
+        if not self.recent_files:
+            action = QAction("No recent files", self)
+            action.setEnabled(False)
+            self.recent_menu.addAction(action)
+            return
+            
+        for path in self.recent_files:
+            # Check if file exists
+            if not os.path.exists(path):
+                continue
+                
+            name = Path(path).name
+            action = QAction(name, self)
+            action.setData(path)
+            action.triggered.connect(lambda checked, p=path: self.open_pdf(p))
+            self.recent_menu.addAction(action)
+            
+        self.recent_menu.addSeparator()
+        clear_action = QAction("Clear Recent", self)
+        clear_action.triggered.connect(self.clear_recent)
+        self.recent_menu.addAction(clear_action)
+        
+    def clear_recent(self):
+        """Clear recent files list."""
+        self.recent_files = []
+        self.settings.setValue("recent_files", [])
+        self.update_recent_menu()
+        
+    def show_preferences(self):
+        """Show settings dialog."""
+        dialog = SettingsDialog(self, self.max_recent_files, self.current_theme)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            settings = dialog.get_settings()
+            self.max_recent_files = settings["max_recent_files"]
+            self.settings.setValue("max_recent_files", self.max_recent_files)
+            
+            # Trim existing if needed
+            if len(self.recent_files) > self.max_recent_files:
+                self.recent_files = self.recent_files[:self.max_recent_files]
+                self.settings.setValue("recent_files", self.recent_files)
+                self.update_recent_menu()
     
     def setup_ui(self):
         """Set up the main UI layout."""
@@ -2937,7 +2806,14 @@ class PDFViewerApp(QMainWindow):
         open_folder_action = QAction("Open Folder...", self)
         open_folder_action.setShortcut("Ctrl+Shift+O")
         open_folder_action.triggered.connect(self.open_folder)
+        open_folder_action.triggered.connect(self.open_folder)
         file_menu.addAction(open_folder_action)
+        
+        # Recent Files
+        self.recent_menu = file_menu.addMenu("Open Recent")
+        self.update_recent_menu()
+        
+        file_menu.addSeparator()
         
         file_menu.addSeparator()
         
@@ -3043,7 +2919,15 @@ class PDFViewerApp(QMainWindow):
         delete_pages_action = QAction("Delete Selected Pages", self)
         delete_pages_action.setShortcut("Delete")
         delete_pages_action.triggered.connect(self.delete_pages_current)
-        edit_menu.addAction(delete_pages_action)
+        edit_menu = menubar.addMenu("&Edit")
+        
+        prefs_action = QAction("Preferences...", self)
+        prefs_action.triggered.connect(self.show_preferences)
+        edit_menu.addAction(prefs_action)
+        
+        edit_menu.addSeparator()
+        
+        delete_pages_action = QAction("Delete Selected Pages", self)
         
         edit_menu.addSeparator()
         
@@ -3428,6 +3312,9 @@ class PDFViewerApp(QMainWindow):
             
             self.open_files[file_path] = tab
             self.statusbar.showMessage(f"Opened: {file_name}")
+            
+            # Add to recent files
+            self.add_to_recent(file_path)
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to open PDF:\n{e}")

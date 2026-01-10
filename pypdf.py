@@ -32,7 +32,8 @@ from PyQt6.QtPrintSupport import QPrinter, QPrintDialog, QPrintPreviewDialog
 # STYLES
 # ============================================================================
 
-from theme.styles import DARK_THEME, LIGHT_THEME
+from theme.styles import DARK_THEME, LIGHT_THEME, MIDNIGHT_BLUE_THEME, EGGPLANT_THEME
+from loading_overlay import LoadingOverlay
 
 
 # ============================================================================
@@ -2229,6 +2230,120 @@ class PDFTab(QWidget):
             separator_color = "#30363d"
             label_color = "#8b949e"
             selection_color = "#58a6ff"
+        elif theme == "midnight":
+            self.setStyleSheet(MIDNIGHT_BLUE_THEME)
+            nav_bar_style = """
+                QFrame {
+                    background-color: #0f152a;
+                    border-bottom: 1px solid #1e2540;
+                    padding: 8px;
+                }
+            """
+            btn_style = """
+                QPushButton {
+                    background-color: #1a223e;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    color: #a4b1cd;
+                }
+                QPushButton:hover { background-color: #242c4c; }
+            """
+            zoom_btn_style = """
+                QPushButton {
+                    background-color: #1a223e;
+                    border-radius: 6px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    color: #a4b1cd;
+                }
+                QPushButton:hover { background-color: #242c4c; }
+            """
+            toggle_btn_style = """
+                QPushButton {
+                    background-color: #1a223e;
+                    border-radius: 6px;
+                    padding: 0 16px;
+                    font-weight: 600;
+                    color: #a4b1cd;
+                }
+                QPushButton:checked {
+                    background-color: #3e6cd5;
+                    color: white;
+                }
+                QPushButton:!checked {
+                    background-color: #1a223e;
+                }
+                QPushButton:!checked:hover {
+                    background-color: #242c4c;
+                }
+            """
+            grid_controls_style = """
+                QFrame {
+                    background-color: #0b1021;
+                    border-bottom: 1px solid #1e2540;
+                    padding: 6px;
+                }
+            """
+            separator_color = "#1e2540"
+            label_color = "#6b7a99"
+            selection_color = "#3e6cd5"
+        elif theme == "eggplant":
+            self.setStyleSheet(EGGPLANT_THEME)
+            nav_bar_style = """
+                QFrame {
+                    background-color: #3a2839;
+                    border-bottom: 1px solid #6b5069;
+                    padding: 8px;
+                }
+            """
+            btn_style = """
+                QPushButton {
+                    background-color: #50384e;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    color: #ece0ec;
+                }
+                QPushButton:hover { background-color: #664963; }
+            """
+            zoom_btn_style = """
+                QPushButton {
+                    background-color: #50384e;
+                    border-radius: 6px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    color: #ece0ec;
+                }
+                QPushButton:hover { background-color: #664963; }
+            """
+            toggle_btn_style = """
+                QPushButton {
+                    background-color: #50384e;
+                    border-radius: 6px;
+                    padding: 0 16px;
+                    font-weight: 600;
+                    color: #ece0ec;
+                }
+                QPushButton:checked {
+                    background-color: #8e44ad;
+                    color: white;
+                }
+                QPushButton:!checked {
+                    background-color: #50384e;
+                }
+                QPushButton:!checked:hover {
+                    background-color: #664963;
+                }
+            """
+            grid_controls_style = """
+                QFrame {
+                    background-color: #50384e;
+                    border-bottom: 1px solid #6b5069;
+                    padding: 6px;
+                }
+            """
+            separator_color = "#6b5069"
+            label_color = "#b0a0b0"
+            selection_color = "#8e44ad"
         else:
             # Light theme
             nav_bar_style = """
@@ -2337,6 +2452,45 @@ class PDFTab(QWidget):
                 }
                 QLineEdit:focus {
                     border-color: #388bfd;
+                }
+            """)
+        elif theme == "midnight":
+            self.search_widget.setStyleSheet("""
+                QFrame {
+                    background-color: #0f152a;
+                    border-bottom: 1px solid #1e2540;
+                }
+            """)
+            self.search_input.setStyleSheet("""
+                QLineEdit {
+                    background-color: #1a223e;
+                    border: 1px solid #1e2540;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                    color: #a4b1cd;
+                }
+                QLineEdit:focus {
+                    border-color: #3e6cd5;
+                }
+            """)
+
+        elif theme == "eggplant":
+            self.search_widget.setStyleSheet("""
+                QFrame {
+                    background-color: #3a2839;
+                    border-bottom: 1px solid #6b5069;
+                }
+            """)
+            self.search_input.setStyleSheet("""
+                QLineEdit {
+                    background-color: #50384e;
+                    border: 1px solid #6b5069;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                    color: #ece0ec;
+                }
+                QLineEdit:focus {
+                    border-color: #8e44ad;
                 }
             """)
         else:
@@ -2514,11 +2668,12 @@ class PDFTab(QWidget):
 class SettingsDialog(QDialog):
     """Dialog for application settings."""
     
-    def __init__(self, parent=None, current_max_recent=5, theme="dark"):
+    def __init__(self, parent=None, current_max_recent=5, theme="dark", show_recent_in_welcome=True):
         super().__init__(parent)
         self.setWindowTitle("Preferences")
         self.setFixedWidth(400)
         self.max_recent_files = current_max_recent
+        self.show_recent_in_welcome = show_recent_in_welcome
         self.theme = theme
         self.setup_ui()
         
@@ -2533,6 +2688,24 @@ class SettingsDialog(QDialog):
             cancel_bg = "#30363d"
             cancel_hover = "#484f58"
             cancel_text = "#c9d1d9"
+        elif self.theme == "midnight":
+            bg_color = "#0b1021"
+            frame_bg = "#1a223e"
+            text_color = "#a4b1cd"
+            border_color = "#1e2540"
+            input_bg = "#0b1021"
+            cancel_bg = "#1a223e"
+            cancel_hover = "#242c4c"
+            cancel_text = "#a4b1cd" 
+        elif self.theme == "eggplant":
+            bg_color = "#50384e"
+            frame_bg = "#3a2839"
+            text_color = "#ece0ec"
+            border_color = "#6b5069"
+            input_bg = "#50384e"
+            cancel_bg = "#3a2839"
+            cancel_hover = "#664963"
+            cancel_text = "#ece0ec"
         else:
             bg_color = "#ffffff"
             frame_bg = "#f6f8fa"
@@ -2579,6 +2752,12 @@ class SettingsDialog(QDialog):
         group_layout.addWidget(label, 0, 0)
         group_layout.addWidget(self.recent_count_spin, 0, 1)
         
+        # Show recent files in welcome checkbox
+        self.show_recent_checkbox = QCheckBox("Show recent files in Welcome tab")
+        self.show_recent_checkbox.setChecked(self.show_recent_in_welcome)
+        self.show_recent_checkbox.setStyleSheet(f"color: {text_color}; font-size: 13px;")
+        group_layout.addWidget(self.show_recent_checkbox, 1, 0, 1, 2)
+        
         layout.addWidget(group)
         
         # Buttons
@@ -2622,7 +2801,8 @@ class SettingsDialog(QDialog):
     def get_settings(self):
         """Get the updated settings."""
         return {
-            "max_recent_files": self.recent_count_spin.value()
+            "max_recent_files": self.recent_count_spin.value(),
+            "show_recent_in_welcome": self.show_recent_checkbox.isChecked()
         }
 
 
@@ -2648,13 +2828,18 @@ class PDFViewerApp(QMainWindow):
         self.settings = QSettings("PyPDF", "Viewer")
         self.recent_files = self.settings.value("recent_files", [], type=list)
         self.max_recent_files = int(self.settings.value("max_recent_files", 5))
+        self.show_recent_in_welcome = self.settings.value("show_recent_in_welcome", True, type=bool)
         self.current_theme = self.settings.value("theme", "dark", type=str)
         
         self.setup_ui()
         self.setup_menu()
-        self.setup_toolbar()
+        # self.setup_toolbar()  # Toolbar removed
         self.setup_statusbar()
         self.show_welcome()
+        
+        # Create loading overlay
+        self.loading_overlay = LoadingOverlay(self)
+        self.loading_overlay.hide()
 
     def add_to_recent(self, file_path: str):
         """Add file to recent list."""
@@ -2704,11 +2889,25 @@ class PDFViewerApp(QMainWindow):
         
     def show_preferences(self):
         """Show settings dialog."""
-        dialog = SettingsDialog(self, self.max_recent_files, self.current_theme)
+        dialog = SettingsDialog(self, self.max_recent_files, self.current_theme, self.show_recent_in_welcome)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             settings = dialog.get_settings()
             self.max_recent_files = settings["max_recent_files"]
             self.settings.setValue("max_recent_files", self.max_recent_files)
+            
+            # Handle show_recent_in_welcome setting
+            old_show_recent = self.show_recent_in_welcome
+            self.show_recent_in_welcome = settings["show_recent_in_welcome"]
+            self.settings.setValue("show_recent_in_welcome", self.show_recent_in_welcome)
+            
+            # Refresh welcome tab if setting changed
+            if old_show_recent != self.show_recent_in_welcome:
+                # Check if welcome tab exists and refresh it
+                for i in range(self.tab_widget.count()):
+                    if self.tab_widget.tabText(i) == "Welcome":
+                        self.tab_widget.removeTab(i)
+                        self.show_welcome()
+                        break
             
             # Trim existing if needed
             if len(self.recent_files) > self.max_recent_files:
@@ -2902,13 +3101,23 @@ class PDFViewerApp(QMainWindow):
         # Theme submenu
         theme_menu = view_menu.addMenu("Theme")
         
-        self.dark_theme_action = QAction("🌙 Dark Theme", self)
+        self.dark_theme_action = QAction("⚫ Dark", self)
         self.dark_theme_action.setCheckable(True)
         self.dark_theme_action.setChecked(True)
         self.dark_theme_action.triggered.connect(lambda: self.set_theme("dark"))
         theme_menu.addAction(self.dark_theme_action)
+
+        self.midnight_theme_action = QAction("🟣 Midnight Blue", self)
+        self.midnight_theme_action.setCheckable(True)
+        self.midnight_theme_action.triggered.connect(lambda: self.set_theme("midnight"))
+        theme_menu.addAction(self.midnight_theme_action)
+
+        self.eggplant_theme_action = QAction("🍆 Eggplant", self)
+        self.eggplant_theme_action.setCheckable(True)
+        self.eggplant_theme_action.triggered.connect(lambda: self.set_theme("eggplant"))
+        theme_menu.addAction(self.eggplant_theme_action)
         
-        self.light_theme_action = QAction("☀️ Light Theme", self)
+        self.light_theme_action = QAction("☀️ Light", self)
         self.light_theme_action.setCheckable(True)
         self.light_theme_action.triggered.connect(lambda: self.set_theme("light"))
         theme_menu.addAction(self.light_theme_action)
@@ -3155,22 +3364,55 @@ class PDFViewerApp(QMainWindow):
         
         layout.addLayout(btn_layout)
         
-        # Features list
-        features = QLabel("""
-            <div style="margin-top: 48px; color: #8b949e; text-align: center;">
-                <p><b>Features:</b></p>
-                <p>✓ <span style="color: #3fb950;">Create new PDFs</span> from scratch</p>
-                <p>✓ <span style="color: #58a6ff;">Edit PDFs</span> - reorder, delete, insert pages</p>
-                <p>✓ Insert pages from other PDFs or images</p>
-                <p>✓ <span style="color: #a371f7;">Extract pages</span> to new PDF file</p>
-                <p>✓ View with smooth zoom and scrolling</p>
-                <p>✓ Grid view to see all pages at once</p>
-                <p>✓ 🖨️ Print with preview support</p>
-                <p>✓ 🌙 Dark / ☀️ Light theme</p>
-            </div>
-        """)
-        features.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(features)
+        # Recent files list (if enabled)
+        if self.show_recent_in_welcome and self.recent_files:
+            recent_container = QWidget()
+            recent_layout = QVBoxLayout(recent_container)
+            recent_layout.setContentsMargins(0, 48, 0, 0)
+            recent_layout.setSpacing(12)
+            
+            recent_title = QLabel("Recent Files")
+            recent_title.setStyleSheet("font-size: 18px; font-weight: 600; color: #8b949e;")
+            recent_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            recent_layout.addWidget(recent_title)
+            
+            # Create list widget for recent files
+            recent_list = QListWidget()
+            recent_list.setMaximumWidth(600)
+            recent_list.setMaximumHeight(300)
+            recent_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            recent_list.setStyleSheet("""
+                QListWidget {
+                    background-color: transparent;
+                    border: none;
+                    outline: none;
+                }
+                QListWidget::item {
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                }
+                QListWidget::item:hover {
+                    background-color: rgba(139, 148, 158, 0.1);
+                }
+            """)
+            
+            # Add recent files to list
+            for file_path in self.recent_files[:10]:  # Show max 10 recent files
+                if os.path.exists(file_path):
+                    file_name = Path(file_path).name
+                    # Truncate long filenames
+                    if len(file_name) > 50:
+                        file_name = file_name[:47] + "..."
+                    item = QListWidgetItem(f"📄 {file_name}")
+                    item.setData(Qt.ItemDataRole.UserRole, file_path)
+                    item.setToolTip(file_path)
+                    recent_list.addItem(item)
+            
+            # Connect double-click to open file
+            recent_list.itemDoubleClicked.connect(lambda item: self.open_pdf(item.data(Qt.ItemDataRole.UserRole)))
+            
+            recent_layout.addWidget(recent_list, alignment=Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(recent_container)
         
         self.tab_widget.addTab(welcome, "Welcome")
     
@@ -3285,14 +3527,21 @@ class PDFViewerApp(QMainWindow):
                 self.tab_widget.setCurrentIndex(index)
             return
         
-        # Remove welcome tab if present
-        for i in range(self.tab_widget.count()):
-            if self.tab_widget.tabText(i) == "Welcome":
-                self.tab_widget.removeTab(i)
-                break
+        # Show loading overlay and change cursor
+        self.loading_overlay.setGeometry(self.rect())
+        self.loading_overlay.show()
+        self.loading_overlay.raise_()
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        QApplication.processEvents()  # Process events to show overlay
         
-        # Create new tab
         try:
+            # Remove welcome tab if present
+            for i in range(self.tab_widget.count()):
+                if self.tab_widget.tabText(i) == "Welcome":
+                    self.tab_widget.removeTab(i)
+                    break
+            
+            # Create new tab
             tab = PDFTab(file_path)
             file_name = Path(file_path).name
             
@@ -3318,10 +3567,36 @@ class PDFViewerApp(QMainWindow):
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to open PDF:\n{e}")
+        finally:
+            # Hide loading overlay and restore cursor
+            self.loading_overlay.hide()
+            QApplication.restoreOverrideCursor()
     
     def close_tab(self, index: int):
         """Close a tab."""
         widget = self.tab_widget.widget(index)
+        
+        # Check if tab has unsaved changes
+        if isinstance(widget, PDFTab) and widget.modified:
+            file_name = widget.file_name
+            reply = QMessageBox.question(
+                self,
+                "Unsaved Changes",
+                f"'{file_name}' has unsaved changes.\n\nDo you want to save before closing?",
+                QMessageBox.StandardButton.Save | 
+                QMessageBox.StandardButton.Discard | 
+                QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Save
+            )
+            
+            if reply == QMessageBox.StandardButton.Cancel:
+                return  # Don't close the tab
+            elif reply == QMessageBox.StandardButton.Save:
+                # Save the file before closing
+                widget.save_pdf()
+                # Check if save was successful (user might have cancelled save dialog)
+                if widget.modified:
+                    return  # Save was cancelled, don't close
         
         # Find and remove from open_files
         for path, tab in list(self.open_files.items()):
@@ -3408,35 +3683,52 @@ class PDFViewerApp(QMainWindow):
         """Toggle sidebar visibility."""
         self.sidebar.setVisible(not self.sidebar.isVisible())
     
-    def set_theme(self, theme: str):
+    def set_theme(self, theme_name):
         """Set the application theme."""
-        self.current_theme = theme
+        if theme_name == self.current_theme:
+            return
+            
+        self.current_theme = theme_name
+        self.settings.setValue("theme", theme_name)
         
-        # Save preference
-        settings = QSettings("PyPDF", "PyPDF")
-        settings.setValue("theme", theme)
+        # Update styling
+        self.update_styles()
         
-        # Update menu checkmarks
-        self.dark_theme_action.setChecked(theme == "dark")
-        self.light_theme_action.setChecked(theme == "light")
-        
-        # Apply stylesheet
-        if theme == "dark":
+        # Update menu state
+        self.dark_theme_action.setChecked(theme_name == "dark")
+        self.midnight_theme_action.setChecked(theme_name == "midnight")
+        self.eggplant_theme_action.setChecked(theme_name == "eggplant")
+        self.light_theme_action.setChecked(theme_name == "light")
+
+    def update_styles(self):
+        """Apply the current theme's stylesheet and update inline styles."""
+        if self.current_theme == "dark":
             QApplication.instance().setStyleSheet(DARK_THEME)
             self.update_inline_styles_dark()
-        else:
+        elif self.current_theme == "midnight":
+            QApplication.instance().setStyleSheet(MIDNIGHT_BLUE_THEME)
+            self.update_inline_styles_midnight()
+        elif self.current_theme == "eggplant":
+            QApplication.instance().setStyleSheet(EGGPLANT_THEME)
+            self.update_inline_styles_eggplant()
+        else: # light theme
             QApplication.instance().setStyleSheet(LIGHT_THEME)
             self.update_inline_styles_light()
         
         # Update PDF view backgrounds
+        # Update PDF view backgrounds
         for tab in self.open_files.values():
-            if theme == "dark":
+            if self.current_theme == "dark":
                 tab.pdf_view.setBackgroundBrush(QBrush(QColor("#161b22")))
+            elif self.current_theme == "midnight":
+                tab.pdf_view.setBackgroundBrush(QBrush(QColor("#0b1021")))
+            elif self.current_theme == "eggplant":
+                tab.pdf_view.setBackgroundBrush(QBrush(QColor("#50384e")))
             else:
                 tab.pdf_view.setBackgroundBrush(QBrush(QColor("#eaeef2")))
-            tab.update_styles_for_theme(theme)
+            tab.update_styles_for_theme(self.current_theme)
         
-        self.statusbar.showMessage(f"Switched to {theme.capitalize()} theme")
+        self.statusbar.showMessage(f"Switched to {self.current_theme.capitalize()} theme")
     
     def update_inline_styles_dark(self):
         """Update inline styles for dark theme."""
@@ -3461,6 +3753,32 @@ class PDFViewerApp(QMainWindow):
                         QFrame {
                             background-color: #f6f8fa;
                             border-bottom: 1px solid #d0d7de;
+                        }
+                    """)
+
+    def update_inline_styles_midnight(self):
+        """Update inline styles for midnight theme."""
+        # Update sidebar header
+        if hasattr(self, 'sidebar'):
+            for child in self.sidebar.findChildren(QFrame):
+                if child.styleSheet() and "background-color" in child.styleSheet():
+                    child.setStyleSheet("""
+                        QFrame {
+                            background-color: #0f152a;
+                            border-bottom: 1px solid #1e2540;
+                        }
+                    """)
+
+    def update_inline_styles_eggplant(self):
+        """Update inline styles for eggplant theme."""
+        # Update sidebar header
+        if hasattr(self, 'sidebar'):
+            for child in self.sidebar.findChildren(QFrame):
+                if child.styleSheet() and "background-color" in child.styleSheet():
+                    child.setStyleSheet("""
+                        QFrame {
+                            background-color: #3a2839;
+                            border-bottom: 1px solid #6b5069;
                         }
                     """)
     
@@ -3829,13 +4147,17 @@ def main():
     # Set theme in window (updates menu checkmarks and internal state)
     window.current_theme = saved_theme
     window.dark_theme_action.setChecked(saved_theme == "dark")
+    window.midnight_theme_action.setChecked(saved_theme == "midnight")
+    window.eggplant_theme_action.setChecked(saved_theme == "eggplant")
     window.light_theme_action.setChecked(saved_theme == "light")
     if saved_theme == "light":
         window.update_inline_styles_light()
-        window.theme_btn.setText("🌙 Dark")
+    elif saved_theme == "midnight":
+        window.update_inline_styles_midnight()
+    elif saved_theme == "eggplant":
+        window.update_inline_styles_eggplant()
     else:
         window.update_inline_styles_dark()
-        window.theme_btn.setText("☀️ Light")
     
     window.show()
     

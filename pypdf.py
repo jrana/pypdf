@@ -1513,52 +1513,12 @@ class PDFTab(QWidget):
         self.split_btn.clicked.connect(self.show_split_dialog)
         nav_layout.addWidget(self.split_btn)
         
+        
         # Separator
         self.sep2 = QFrame()
         self.sep2.setFrameShape(QFrame.Shape.VLine)
         self.sep2.setStyleSheet("background-color: #30363d; max-width: 1px; margin: 0 8px;")
         nav_layout.addWidget(self.sep2)
-        
-        # Zoom controls
-        self.zoom_out_btn = QPushButton("−")
-        self.zoom_out_btn.setFixedSize(36, 36)
-        self.zoom_out_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #30363d;
-                border-radius: 6px;
-                font-size: 18px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #484f58; }
-        """)
-        self.zoom_out_btn.clicked.connect(self.zoom_out)
-        nav_layout.addWidget(self.zoom_out_btn)
-        
-        self.zoom_slider = QSlider(Qt.Orientation.Horizontal)
-        self.zoom_slider.setRange(25, 400)
-        self.zoom_slider.setValue(100)
-        self.zoom_slider.setFixedWidth(150)
-        self.zoom_slider.valueChanged.connect(self.on_zoom_slider_changed)
-        nav_layout.addWidget(self.zoom_slider)
-        
-        self.zoom_in_btn = QPushButton("+")
-        self.zoom_in_btn.setFixedSize(36, 36)
-        self.zoom_in_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #30363d;
-                border-radius: 6px;
-                font-size: 18px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #484f58; }
-        """)
-        self.zoom_in_btn.clicked.connect(self.zoom_in)
-        nav_layout.addWidget(self.zoom_in_btn)
-        
-        self.zoom_label = QLabel("100%")
-        self.zoom_label.setFixedWidth(50)
-        self.zoom_label.setStyleSheet("color: #8b949e; padding-left: 8px;")
-        nav_layout.addWidget(self.zoom_label)
         
         # Fit buttons
         self.fit_width_btn = QPushButton("Fit Width")
@@ -1754,10 +1714,6 @@ class PDFTab(QWidget):
             self.next_btn.show()
             self.page_spin.show()
             self.page_label.show()
-            self.zoom_out_btn.show()
-            self.zoom_slider.show()
-            self.zoom_in_btn.show()
-            self.zoom_label.show()
             self.fit_width_btn.show()
             self.fit_page_btn.show()
         else:
@@ -1771,13 +1727,8 @@ class PDFTab(QWidget):
             self.next_btn.hide()
             self.page_spin.hide()
             self.page_label.hide()
-            self.zoom_out_btn.hide()
-            self.zoom_slider.hide()
-            self.zoom_in_btn.hide()
-            self.zoom_label.hide()
             self.fit_width_btn.hide()
-            self.fit_width_btn.hide()
-        self.fit_page_btn.hide()
+            self.fit_page_btn.hide()
         
         # Hide search in grid mode
         self.search_widget.hide()
@@ -2136,19 +2087,15 @@ class PDFTab(QWidget):
     
     def zoom_in(self):
         self.pdf_view.zoom_in()
-        self.update_zoom_display()
     
     def zoom_out(self):
         self.pdf_view.zoom_out()
-        self.update_zoom_display()
     
     def fit_width(self):
         self.pdf_view.fit_width()
-        self.update_zoom_display()
     
     def fit_page(self):
         self.pdf_view.fit_page()
-        self.update_zoom_display()
     
     def on_page_spin_changed(self, value):
         self.pdf_view.go_to_page(value - 1)
@@ -2157,18 +2104,6 @@ class PDFTab(QWidget):
         self.page_spin.blockSignals(True)
         self.page_spin.setValue(page_num + 1)
         self.page_spin.blockSignals(False)
-    
-    def on_zoom_slider_changed(self, value):
-        zoom = value / 100.0
-        self.pdf_view.set_zoom(zoom)
-        self.zoom_label.setText(f"{value}%")
-    
-    def update_zoom_display(self):
-        zoom_percent = int(self.pdf_view.zoom_level * 100)
-        self.zoom_slider.blockSignals(True)
-        self.zoom_slider.setValue(zoom_percent)
-        self.zoom_slider.blockSignals(False)
-        self.zoom_label.setText(f"{zoom_percent}%")
     
     def update_styles_for_theme(self, theme: str):
         """Update tab-specific styles for the given theme."""
@@ -2418,13 +2353,8 @@ class PDFTab(QWidget):
         self.prev_btn.setStyleSheet(btn_style)
         self.next_btn.setStyleSheet(btn_style)
         
-        # Update zoom buttons
-        self.zoom_out_btn.setStyleSheet(zoom_btn_style)
-        self.zoom_in_btn.setStyleSheet(zoom_btn_style)
-        
         # Update labels
         self.page_label.setStyleSheet(f"color: {label_color}; padding: 0 8px;")
-        self.zoom_label.setStyleSheet(f"color: {label_color}; padding-left: 8px;")
         self.selection_label.setStyleSheet(f"color: {selection_color}; font-weight: 500; padding: 0 12px;")
         
         # Update grid controls

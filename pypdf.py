@@ -88,6 +88,10 @@ class PDFPageView(QGraphicsView):
         self.drawing = False
         self.draw_start = None
         
+        # Links
+        self.links: List[Dict] = []  # List of {page, rect, uri, dest}
+        self.setMouseTracking(True)  # Enable mouse tracking for hover effects
+        
     def load_pdf(self, file_path: str) -> bool:
         """Load a PDF file."""
         try:
@@ -110,6 +114,7 @@ class PDFPageView(QGraphicsView):
         self.page_positions.clear()
         self.page_x_offsets.clear()
         self.highlight_items.clear()
+        self.links.clear()  # Clear previous links
         
         current_y = self.page_gap
         max_width = 0
@@ -140,6 +145,9 @@ class PDFPageView(QGraphicsView):
             self.pixmap_items.append(pixmap_item)
             self.page_positions.append(current_y)
             self.page_x_offsets.append(x_offset)
+            
+            # Extract links from this page
+            self._extract_links_from_page(i, x_offset, current_y)
             
             current_y += pixmap.height() + self.page_gap
         
@@ -347,6 +355,60 @@ class PDFPageView(QGraphicsView):
         
         # Center view on match (with some vertical offset)
         self.centerOn(target_x, target_y)
+    
+    def _extract_links_from_page(self, page_num: int, x_offset: float, y_offset: float):
+        """Extract links from a PDF page and store them with scene coordinates."""
+        if not self.pdf_doc:
+            return
+        
+        page = self.pdf_doc[page_num]
+        links = page.get_links()
+        
+        for link in links:
+            if 'from' in link:
+                rect = link['from']
+                # Convert PDF coordinates to scene coordinates
+                scale = self.zoom_level * 2  # Match rendering scale
+                scene_rect = QRectF(
+                    x_offset + rect.x0 * scale,
+                    y_offset + rect.y0 * scale,
+                    (rect.x1 - rect.x0) * scale,
+                    (rect.y1 - rect.y0) * scale
+                )
+                
+                link_info = {
+                    'page': page_num,
+                    'rect': scene_rect,
+                    'uri': link.get('uri', ''),
+                    'page_dest': link.get('page', -1)
+                }
+                self.links.append(link_info)
+    
+    def mousePressEvent(self, event: QMouseEvent):
+        """Handle mouse press to detect link clicks."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            scene_pos = self.mapToScene(event.pos())
+            for link in self.links:
+                if link['rect'].contains(scene_pos):
+                    self._handle_link_click(link)
+                    event.accept()
+                    return
+        super().mousePressEvent(event)
+    
+    def mouseMoveEvent(self, event: QMouseEvent):
+        """Handle mouse move to change cursor over links."""
+        scene_pos = self.mapToScene(event.pos())
+        over_link = any(link['rect'].contains(scene_pos) for link in self.links)
+        self.viewport().setCursor(Qt.CursorShape.PointingHandCursor if over_link else Qt.CursorShape.ArrowCursor)
+        super().mouseMoveEvent(event)
+    
+    def _handle_link_click(self, link: dict):
+        """Handle clicking on a link."""
+        import webbrowser
+        if link['uri']:
+            webbrowser.open(link['uri'])
+        elif link['page_dest'] >= 0:
+            self.go_to_page(link['page_dest'])
 
 
 # ============================================================================
@@ -1392,7 +1454,7 @@ class PDFTab(QWidget):
         nav_layout.setContentsMargins(12, 8, 12, 8)
         
         # View mode toggle buttons
-        self.single_view_btn = QPushButton("📄 Single")
+        self.single_view_btn = QPushButton("Single")
         self.single_view_btn.setFixedHeight(36)
         self.single_view_btn.setCheckable(True)
         self.single_view_btn.setChecked(True)
@@ -1416,7 +1478,7 @@ class PDFTab(QWidget):
         self.single_view_btn.clicked.connect(lambda: self.set_view_mode("single"))
         nav_layout.addWidget(self.single_view_btn)
         
-        self.grid_view_btn = QPushButton("⊞ Grid")
+        self.grid_view_btn = QPushButton("Grid")
         self.grid_view_btn.setFixedHeight(36)
         self.grid_view_btn.setCheckable(True)
         self.grid_view_btn.setStyleSheet("""
@@ -1439,14 +1501,8 @@ class PDFTab(QWidget):
         self.grid_view_btn.clicked.connect(lambda: self.set_view_mode("grid"))
         nav_layout.addWidget(self.grid_view_btn)
         
-        # Separator
-        self.sep1 = QFrame()
-        self.sep1.setFrameShape(QFrame.Shape.VLine)
-        self.sep1.setStyleSheet("background-color: #30363d; max-width: 1px; margin: 0 8px;")
-        nav_layout.addWidget(self.sep1)
-        
         # Previous page button
-        self.prev_btn = QPushButton("◀")
+        self.prev_btn = QPushButton()
         self.prev_btn.setFixedSize(36, 36)
         self.prev_btn.setStyleSheet("""
             QPushButton {
@@ -1471,7 +1527,7 @@ class PDFTab(QWidget):
         nav_layout.addWidget(self.page_label)
         
         # Next page button
-        self.next_btn = QPushButton("▶")
+        self.next_btn = QPushButton()
         self.next_btn.setFixedSize(36, 36)
         self.next_btn.setStyleSheet("""
             QPushButton {
@@ -1493,8 +1549,9 @@ class PDFTab(QWidget):
         nav_layout.addWidget(self.selection_label)
         
         # Split PDF button
-        self.split_btn = QPushButton("✂ Split PDF")
+        self.split_btn = QPushButton("Split PDF")
         self.split_btn.setFixedHeight(36)
+        self.split_btn.setIcon(QIcon("img/scissors.png"))
         self.split_btn.setStyleSheet("""
             QPushButton {
                 background-color: #8957e5;
@@ -1525,6 +1582,7 @@ class PDFTab(QWidget):
         self.fit_width_btn.setProperty("class", "secondaryBtn")
         self.fit_width_btn.setObjectName("secondaryBtn")
         self.fit_width_btn.clicked.connect(self.fit_width)
+
         nav_layout.addWidget(self.fit_width_btn)
         
         self.fit_page_btn = QPushButton("Fit Page")
@@ -2166,7 +2224,6 @@ class PDFTab(QWidget):
             label_color = "#8b949e"
             selection_color = "#58a6ff"
         elif theme == "midnight":
-            self.setStyleSheet(MIDNIGHT_BLUE_THEME)
             nav_bar_style = """
                 QFrame {
                     background-color: #0f152a;
@@ -2223,7 +2280,6 @@ class PDFTab(QWidget):
             label_color = "#6b7a99"
             selection_color = "#3e6cd5"
         elif theme == "eggplant":
-            self.setStyleSheet(EGGPLANT_THEME)
             nav_bar_style = """
                 QFrame {
                     background-color: #3a2839;
@@ -2346,12 +2402,15 @@ class PDFTab(QWidget):
         self.grid_view_btn.setStyleSheet(toggle_btn_style)
         
         # Update separators
-        self.sep1.setStyleSheet(f"background-color: {separator_color}; max-width: 1px; margin: 0 8px;")
         self.sep2.setStyleSheet(f"background-color: {separator_color}; max-width: 1px; margin: 0 8px;")
         
         # Update navigation buttons
         self.prev_btn.setStyleSheet(btn_style)
         self.next_btn.setStyleSheet(btn_style)
+        
+        # Clear inline styles on fit buttons to use global stylesheet
+        self.fit_width_btn.setStyleSheet("")
+        self.fit_page_btn.setStyleSheet("")
         
         # Update labels
         self.page_label.setStyleSheet(f"color: {label_color}; padding: 0 8px;")
@@ -3231,6 +3290,50 @@ class PDFViewerApp(QMainWindow):
         self.theme_btn.clicked.connect(self.toggle_theme)
         toolbar.addWidget(self.theme_btn)
     
+    def setup_statusbar(self):
+        """Set up the status bar."""
+        self.statusbar = self.statusBar()
+        self.statusbar.showMessage("Ready")
+        
+        # Create a permanent widget for file details on the right
+        self.file_details_label = QLabel("")
+        self.statusbar.addPermanentWidget(self.file_details_label)
+    
+    def update_file_details(self, file_path: str):
+        """Update file details in status bar."""
+        import os
+        
+        if not file_path or not os.path.exists(file_path):
+            self.file_details_label.setText("")
+            return
+        
+        # Get file size
+        file_size = os.path.getsize(file_path)
+        
+        # Format file size
+        if file_size < 1024:
+            size_str = f"{file_size} B"
+        elif file_size < 1024 * 1024:
+            size_str = f"{file_size / 1024:.1f} KB"
+        elif file_size < 1024 * 1024 * 1024:
+            size_str = f"{file_size / (1024 * 1024):.1f} MB"
+        else:
+            size_str = f"{file_size / (1024 * 1024 * 1024):.2f} GB"
+        
+        # Get word count from PDF
+        word_count = 0
+        try:
+            doc = fitz.open(file_path)
+            for page in doc:
+                text = page.get_text()
+                word_count += len(text.split())
+            doc.close()
+        except:
+            word_count = 0
+        
+        # Update label
+        self.file_details_label.setText(f"Size: {size_str}, Words: {word_count:,}")
+    
     def toggle_theme(self):
         """Toggle between dark and light theme."""
         if self.current_theme == "dark":
@@ -3482,6 +3585,9 @@ class PDFViewerApp(QMainWindow):
             else:
                 tab.pdf_view.setBackgroundBrush(QBrush(QColor("#eaeef2")))
             
+            # Update button icon based on current theme
+            self.update_tab_button_icons(tab)
+            
             # Truncate long names
             display_name = file_name if len(file_name) <= 30 else file_name[:27] + "..."
             
@@ -3629,6 +3735,48 @@ class PDFViewerApp(QMainWindow):
         self.midnight_theme_action.setChecked(theme_name == "midnight")
         self.eggplant_theme_action.setChecked(theme_name == "eggplant")
         self.light_theme_action.setChecked(theme_name == "light")
+        
+        # Update button icons for all open tabs
+        for tab in self.open_files.values():
+            self.update_tab_button_icons(tab)
+
+    def update_tab_button_icons(self, tab):
+        """Update button icons based on current theme."""
+        if hasattr(tab, 'single_view_btn'):
+            if self.current_theme == "light":
+                tab.single_view_btn.setIcon(QIcon("img/file-text-dark.png"))
+            else:
+                tab.single_view_btn.setIcon(QIcon("img/file-text.png"))
+        
+        if hasattr(tab, 'grid_view_btn'):
+            if self.current_theme == "light":
+                tab.grid_view_btn.setIcon(QIcon("img/layout-grid-dark.png"))
+            else:
+                tab.grid_view_btn.setIcon(QIcon("img/layout-grid.png"))
+        
+        if hasattr(tab, 'prev_btn'):
+            if self.current_theme == "light":
+                tab.prev_btn.setIcon(QIcon("img/chevron-left-dark.png"))
+            else:
+                tab.prev_btn.setIcon(QIcon("img/chevron-left.png"))
+        
+        if hasattr(tab, 'next_btn'):
+            if self.current_theme == "light":
+                tab.next_btn.setIcon(QIcon("img/chevron-right-dark.png"))
+            else:
+                tab.next_btn.setIcon(QIcon("img/chevron-right.png"))
+        
+        if hasattr(tab, 'fit_page_btn'):
+            if self.current_theme == "light":
+                tab.fit_page_btn.setIcon(QIcon("img/chevrons-up-down-dark.png"))
+            else:
+                tab.fit_page_btn.setIcon(QIcon("img/chevrons-up-down.png"))
+        
+        if hasattr(tab, 'fit_width_btn'):
+            if self.current_theme == "light":
+                tab.fit_width_btn.setIcon(QIcon("img/chevrons-left-right-dark.png"))
+            else:
+                tab.fit_width_btn.setIcon(QIcon("img/chevrons-left-right.png"))
 
     def update_styles(self):
         """Apply the current theme's stylesheet and update inline styles."""
@@ -3646,7 +3794,6 @@ class PDFViewerApp(QMainWindow):
             self.update_inline_styles_light()
         
         # Update PDF view backgrounds
-        # Update PDF view backgrounds
         for tab in self.open_files.values():
             if self.current_theme == "dark":
                 tab.pdf_view.setBackgroundBrush(QBrush(QColor("#161b22")))
@@ -3657,6 +3804,7 @@ class PDFViewerApp(QMainWindow):
             else:
                 tab.pdf_view.setBackgroundBrush(QBrush(QColor("#eaeef2")))
             tab.update_styles_for_theme(self.current_theme)
+            self.update_tab_button_icons(tab)  # Update button icons
         
         self.statusbar.showMessage(f"Switched to {self.current_theme.capitalize()} theme")
     
@@ -4063,12 +4211,16 @@ def main():
         app.setWindowIcon(QIcon(icon_path))
     
     # Load saved theme preference (default to dark)
-    settings = QSettings("PyPDF", "PyPDF")
+    settings = QSettings("PyPDF", "Viewer")
     saved_theme = settings.value("theme", "dark")
     
-    # Apply initial theme
+    # Apply initial theme stylesheet
     if saved_theme == "light":
         app.setStyleSheet(LIGHT_THEME)
+    elif saved_theme == "midnight":
+        app.setStyleSheet(MIDNIGHT_BLUE_THEME)
+    elif saved_theme == "eggplant":
+        app.setStyleSheet(EGGPLANT_THEME)
     else:
         app.setStyleSheet(DARK_THEME)
     

@@ -1570,13 +1570,6 @@ class PDFTab(QWidget):
         self.split_btn.clicked.connect(self.show_split_dialog)
         nav_layout.addWidget(self.split_btn)
         
-        
-        # Separator
-        self.sep2 = QFrame()
-        self.sep2.setFrameShape(QFrame.Shape.VLine)
-        self.sep2.setStyleSheet("background-color: #30363d; max-width: 1px; margin: 0 8px;")
-        nav_layout.addWidget(self.sep2)
-        
         # Fit buttons
         self.fit_width_btn = QPushButton("Fit Width")
         self.fit_width_btn.setProperty("class", "secondaryBtn")
@@ -2400,9 +2393,6 @@ class PDFTab(QWidget):
         self.nav_bar.setStyleSheet(nav_bar_style)
         self.single_view_btn.setStyleSheet(toggle_btn_style)
         self.grid_view_btn.setStyleSheet(toggle_btn_style)
-        
-        # Update separators
-        self.sep2.setStyleSheet(f"background-color: {separator_color}; max-width: 1px; margin: 0 8px;")
         
         # Update navigation buttons
         self.prev_btn.setStyleSheet(btn_style)

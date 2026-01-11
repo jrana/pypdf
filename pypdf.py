@@ -2959,6 +2959,7 @@ class PDFViewerApp(QMainWindow):
         self.tab_widget.setMovable(True)
         self.tab_widget.setDocumentMode(True)
         self.tab_widget.tabCloseRequested.connect(self.close_tab)
+        self.tab_widget.currentChanged.connect(self.on_tab_changed)
         content_layout.addWidget(self.tab_widget)
         
         self.splitter.addWidget(self.content_area)
@@ -3540,6 +3541,7 @@ class PDFViewerApp(QMainWindow):
             self.open_pdf(file_path)
     
     def open_pdf(self, file_path: str):
+        print(f"Opening PDF: {file_path}")
         """Open a PDF file in a new tab."""
         # Check if already open
         if file_path in self.open_files:
@@ -3586,7 +3588,9 @@ class PDFViewerApp(QMainWindow):
             self.tab_widget.setCurrentIndex(index)
             
             self.open_files[file_path] = tab
-            self.statusbar.showMessage(f"Opened: {file_name}")
+            
+            # Show file size in status bar
+            self.show_file_info_in_statusbar(file_path)
             
             # Add to recent files
             self.add_to_recent(file_path)
@@ -3598,6 +3602,33 @@ class PDFViewerApp(QMainWindow):
             self.loading_overlay.hide()
             QApplication.restoreOverrideCursor()
     
+    def show_file_info_in_statusbar(self, file_path: str):
+        """Show file info in status bar."""
+        file_name = Path(file_path).name
+        file_size = os.path.getsize(file_path)
+        if file_size < 1024:
+            size_str = f"{file_size} B"
+        elif file_size < 1024 * 1024:
+            size_str = f"{file_size / 1024:.1f} KB"
+        elif file_size < 1024 * 1024 * 1024:
+            size_str = f"{file_size / (1024 * 1024):.1f} MB"
+        else:
+            size_str = f"{file_size / (1024 * 1024 * 1024):.2f} GB"
+        
+        self.statusbar.showMessage(f"Opened: {file_name} ({size_str})")
+    
+    def on_tab_changed(self, index: int):
+        """Handle tab change to update status bar."""
+        if index < 0:
+            self.statusbar.showMessage("Ready")
+            return
+        
+        widget = self.tab_widget.widget(index)
+        if isinstance(widget, PDFTab):
+            self.show_file_info_in_statusbar(widget.file_path)
+        else:
+            self.statusbar.showMessage("Ready")
+
     def close_tab(self, index: int):
         """Close a tab."""
         widget = self.tab_widget.widget(index)

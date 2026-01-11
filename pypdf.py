@@ -1767,6 +1767,12 @@ class PDFTab(QWidget):
             self.page_label.show()
             self.fit_width_btn.show()
             self.fit_page_btn.show()
+            if self.current_theme == "light":
+                self.single_view_btn.setIcon(QIcon("img/file-text.png"))
+                self.grid_view_btn.setIcon(QIcon("img/layout-grid-dark.png"))
+            else:
+                self.single_view_btn.setIcon(QIcon("img/file-text.png"))
+                self.grid_view_btn.setIcon(QIcon("img/layout-grid.png"))
         else:
             self.view_stack.setCurrentIndex(1)
             self.single_view_btn.setChecked(False)
@@ -1780,10 +1786,16 @@ class PDFTab(QWidget):
             self.page_label.hide()
             self.fit_width_btn.hide()
             self.fit_page_btn.hide()
+            if self.current_theme == "light":
+                self.single_view_btn.setIcon(QIcon("img/file-text-dark.png"))
+                self.grid_view_btn.setIcon(QIcon("img/layout-grid.png"))
+            else:
+                self.single_view_btn.setIcon(QIcon("img/file-text.png"))
+                self.grid_view_btn.setIcon(QIcon("img/layout-grid.png"))
         
         # Hide search in grid mode
         self.search_widget.hide()
-    
+
     def on_grid_selection_changed(self, pages: List[int]):
         """Handle grid selection change."""
         self.selected_pages = pages
@@ -3765,13 +3777,19 @@ class PDFViewerApp(QMainWindow):
         """Update button icons based on current theme."""
         if hasattr(tab, 'single_view_btn'):
             if self.current_theme == "light":
-                tab.single_view_btn.setIcon(QIcon("img/file-text-dark.png"))
+                if tab.single_view_btn.isChecked():
+                    tab.single_view_btn.setIcon(QIcon("img/file-text.png"))
+                else:
+                    tab.single_view_btn.setIcon(QIcon("img/file-text-dark.png"))
             else:
                 tab.single_view_btn.setIcon(QIcon("img/file-text.png"))
         
         if hasattr(tab, 'grid_view_btn'):
             if self.current_theme == "light":
-                tab.grid_view_btn.setIcon(QIcon("img/layout-grid-dark.png"))
+                if tab.grid_view_btn.isChecked():
+                    tab.grid_view_btn.setIcon(QIcon("img/layout-grid.png"))
+                else:
+                    tab.grid_view_btn.setIcon(QIcon("img/layout-grid-dark.png"))
             else:
                 tab.grid_view_btn.setIcon(QIcon("img/layout-grid.png"))
         
